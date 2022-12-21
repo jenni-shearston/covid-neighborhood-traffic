@@ -1,7 +1,7 @@
 # Load and Prepare Census Data for Index of Conc at Extremes
 # F31 Google Traffic COVID ITS Analysis
 # Jenni A. Shearston 
-# Updated 12/20/2022
+# Updated 12/21/2022
 
 ####***********************
 #### Table of Contents #### 
@@ -10,8 +10,10 @@
 # N: Notes
 # 0: Preparation 
 # 1: Load and clean census data
-# 2: Create ICE variables
-# 3: Combine and save
+# 2: Review race distributions in tracts with traffic data
+# 3: Create ICE variables
+# 4: Map and review ICE vars
+# 5: Save out data
 
 
 ####**************
@@ -21,7 +23,7 @@
 # Na Description
 # In this script we use census data to create two index of concentration at
 # the extremes variables for a combination of race/ethnicity and household income
-# at the census tract level for NYC: (1) NH White vs Black, (2) NH White vs Hispanic
+# at the census tract level for NYC: (1) NH White vs Black, (2) NH White vs Asian
 
 # Nb Index of Concentration at the Extremes Calculation
 # ICEi = (Ai-Pi)/Ti
@@ -33,12 +35,13 @@
 # Ti is equal to the total population with known income in unit of analysis i
 
 # Nc Household Income by Race and Ethnicity
-# The census does not provide household income data for Non-Hispanic Black
+# The census does not provide household income data for Non-Hispanic Black or Asian
 # householders. Therefore, for the combined race/ethnicity and income ICE calculation
-# for Black folks, we use household income for Non-Hispanic White householders as  
-# one extreme and household income for Black householders (Hispanic origin not 
-# disaggregated) as the other extreme. This paper does the same and notes the lack of
-# race/ethnicity household income data for NH Black folks in the census:
+# we use household income for Non-Hispanic White householders as one extreme and
+# household income for Black householders (Hispanic origin not disaggregated)
+# or Asian householders (Hispanic origin not disaggregated) as the other extreme. 
+# This paper does the same and notes the lack of race/ethnicity household income 
+# data for NH Black folks in the census:
 # Krieger N, Feldman JM, Waterman PD, Chen JT, Coull BA, Hemenway D. Local Residential 
 # Segregation Matters: Stronger Association of Census Tract Compared to Conventional 
 # City-Level Measures with Fatal and Non-Fatal Assaults (Total and Firearm Related), 
@@ -298,9 +301,9 @@ ice_hhincome_race <- hhincome_race %>%
   dplyr::select(poly_id, ice_hhincome_bw, ice_hhincome_aw)
 
 
-####*******************************
-#### 4: Map and review ICE var #### 
-####*******************************
+####********************************
+#### 4: Map and review ICE vars #### 
+####********************************
 
 # 4a Join ice vars with census tract geo file
 ice_census_chloropleth <- ice_hhincome_race %>% 
