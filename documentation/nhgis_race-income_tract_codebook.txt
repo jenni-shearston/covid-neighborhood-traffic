@@ -1,0 +1,230 @@
+--------------------------------------------------------------------------------
+Codebook for NHGIS data file 'nhgis0012_ds255_20215_tract'
+--------------------------------------------------------------------------------
+ 
+Contents
+    - Data Summary
+    - Data Dictionary
+    - Citation and Use
+ 
+Additional documentation on NHGIS data sources is available at: 
+    https://www.nhgis.org/documentation/tabular-data 
+ 
+--------------------------------------------------------------------------------
+Data Summary
+--------------------------------------------------------------------------------
+ 
+Year:             2017-2021
+Geographic level: Census Tract (by State--County)
+Dataset:          2021 American Community Survey: 5-Year Data [2017-2021, Tracts & Larger Areas]
+   NHGIS code:    2017_2021_ACS5b
+   NHGIS ID:      ds255
+Breakdown(s):     Geographic Subarea:
+                     Total area (00)
+Data type(s):     (E) Estimates
+                  (M) Margins of error
+ 
+Tables:
+ 
+1. Household Income in the Past 12 Months (in 2021 Inflation-Adjusted Dollars) (Black or African American Alone Householder)
+   Universe:    Households with a householder who is Black or African American alone
+   Source code: B19001B
+   NHGIS code:  AO68
+ 
+2. Household Income in the Past 12 Months (in 2021 Inflation-Adjusted Dollars) (White Alone, Not Hispanic or Latino Householder)
+   Universe:    Households with a householder who is White alone, not Hispanic or Latino
+   Source code: B19001H
+   NHGIS code:  AO7E
+ 
+--------------------------------------------------------------------------------
+Data Dictionary
+--------------------------------------------------------------------------------
+ 
+Context Fields 
+        GISJOIN:     GIS Join Match Code
+        YEAR:        Data File Year
+        STUSAB:      State/US-Abbreviation (USPS)
+        REGIONA:     Region Code
+        DIVISIONA:   Division Code
+        STATE:       State Name
+        STATEA:      State Code
+        COUNTY:      County Name
+        COUNTYA:     County Code
+        COUSUBA:     County Subdivision Code
+        PLACEA:      Place Code
+        TRACTA:      Census Tract Code
+        BLKGRP:      Block Group
+        CONCITA:     Consolidated City Code
+        AIANHHA:     American Indian Area/Alaska Native Area/Hawaiian Home Land Code
+        RES_ONLYA:   American Indian Area/Alaska Native Area (Reservation or Statistical Entity Only) Code
+        TRUSTA:      American Indian Area (Off-Reservation Trust Land Only)/Hawaiian Home Land Code
+        AIHHTLI:     American Indian/Hawaiian Home Land Trust Land Indicator
+        AITSA:       Tribal Subdivision/Remainder Code
+        ANRCA:       Alaska Native Regional Corporation Code
+        CBSAA:       Metropolitan Statistical Area/Micropolitan Statistical Area Code
+        CSAA:        Combined Statistical Area Code
+        METDIVA:     Metropolitan Division Code
+        NECTAA:      New England City and Town Area Code
+        CNECTAA:     Combined New England City and Town Area Code
+        NECTADIVA:   New England City and Town Area Division Code
+        UAA:         Urban Area Code
+        CDCURRA:     Congressional District (2019-2021, 116th Congress) Code
+        SLDUA:       State Legislative District (Upper Chamber) Code
+        SLDLA:       State Legislative District (Lower Chamber) Code
+        ZCTA5A:      5-Digit ZIP Code Tabulation Area Code
+        SUBMCDA:     Subminor Civil Division Code
+        SDELMA:      School District (Elementary)/Remainder Code
+        SDSECA:      School District (Secondary)/Remainder Code
+        SDUNIA:      School District (Unified)/Remainder Code
+        PCI:         Metropolitan/Micropolitan Principal City Indicator
+        PUMAA:       Public Use Microdata Area Code
+        GEO_ID:      Census Geographic Area Identifier
+        BTTRA:       Tribal Census Tract Code
+        BTBG:        Tribal Block Group
+        TL_GEO_ID:   TIGER/Line Shapefile Geographic Area Identifier
+ 
+Data Type (E):
+    Estimates
+ 
+        NAME_E:      Geographic Area Full Name
+ 
+    Table 1:     Household Income in the Past 12 Months (in 2021 Inflation-Adjusted Dollars) (Black or African American Alone Householder)
+    Universe:    Households with a householder who is Black or African American alone
+    Source code: B19001B
+    NHGIS code:  AO68
+        AO68E001:    Total
+        AO68E002:    Less than $10,000
+        AO68E003:    $10,000 to $14,999
+        AO68E004:    $15,000 to $19,999
+        AO68E005:    $20,000 to $24,999
+        AO68E006:    $25,000 to $29,999
+        AO68E007:    $30,000 to $34,999
+        AO68E008:    $35,000 to $39,999
+        AO68E009:    $40,000 to $44,999
+        AO68E010:    $45,000 to $49,999
+        AO68E011:    $50,000 to $59,999
+        AO68E012:    $60,000 to $74,999
+        AO68E013:    $75,000 to $99,999
+        AO68E014:    $100,000 to $124,999
+        AO68E015:    $125,000 to $149,999
+        AO68E016:    $150,000 to $199,999
+        AO68E017:    $200,000 or more
+ 
+    Table 2:     Household Income in the Past 12 Months (in 2021 Inflation-Adjusted Dollars) (White Alone, Not Hispanic or Latino Householder)
+    Universe:    Households with a householder who is White alone, not Hispanic or Latino
+    Source code: B19001H
+    NHGIS code:  AO7E
+        AO7EE001:    Total
+        AO7EE002:    Less than $10,000
+        AO7EE003:    $10,000 to $14,999
+        AO7EE004:    $15,000 to $19,999
+        AO7EE005:    $20,000 to $24,999
+        AO7EE006:    $25,000 to $29,999
+        AO7EE007:    $30,000 to $34,999
+        AO7EE008:    $35,000 to $39,999
+        AO7EE009:    $40,000 to $44,999
+        AO7EE010:    $45,000 to $49,999
+        AO7EE011:    $50,000 to $59,999
+        AO7EE012:    $60,000 to $74,999
+        AO7EE013:    $75,000 to $99,999
+        AO7EE014:    $100,000 to $124,999
+        AO7EE015:    $125,000 to $149,999
+        AO7EE016:    $150,000 to $199,999
+        AO7EE017:    $200,000 or more
+ 
+Data Type (M):
+    Margins of error
+ 
+        NAME_M:      Geographic Area Full Name
+ 
+    Table 1:     Household Income in the Past 12 Months (in 2021 Inflation-Adjusted Dollars) (Black or African American Alone Householder)
+    Universe:    Households with a householder who is Black or African American alone
+    Source code: B19001B
+    NHGIS code:  AO68
+        AO68M001:    Total
+        AO68M002:    Less than $10,000
+        AO68M003:    $10,000 to $14,999
+        AO68M004:    $15,000 to $19,999
+        AO68M005:    $20,000 to $24,999
+        AO68M006:    $25,000 to $29,999
+        AO68M007:    $30,000 to $34,999
+        AO68M008:    $35,000 to $39,999
+        AO68M009:    $40,000 to $44,999
+        AO68M010:    $45,000 to $49,999
+        AO68M011:    $50,000 to $59,999
+        AO68M012:    $60,000 to $74,999
+        AO68M013:    $75,000 to $99,999
+        AO68M014:    $100,000 to $124,999
+        AO68M015:    $125,000 to $149,999
+        AO68M016:    $150,000 to $199,999
+        AO68M017:    $200,000 or more
+ 
+    Table 2:     Household Income in the Past 12 Months (in 2021 Inflation-Adjusted Dollars) (White Alone, Not Hispanic or Latino Householder)
+    Universe:    Households with a householder who is White alone, not Hispanic or Latino
+    Source code: B19001H
+    NHGIS code:  AO7E
+        AO7EM001:    Total
+        AO7EM002:    Less than $10,000
+        AO7EM003:    $10,000 to $14,999
+        AO7EM004:    $15,000 to $19,999
+        AO7EM005:    $20,000 to $24,999
+        AO7EM006:    $25,000 to $29,999
+        AO7EM007:    $30,000 to $34,999
+        AO7EM008:    $35,000 to $39,999
+        AO7EM009:    $40,000 to $44,999
+        AO7EM010:    $45,000 to $49,999
+        AO7EM011:    $50,000 to $59,999
+        AO7EM012:    $60,000 to $74,999
+        AO7EM013:    $75,000 to $99,999
+        AO7EM014:    $100,000 to $124,999
+        AO7EM015:    $125,000 to $149,999
+        AO7EM016:    $150,000 to $199,999
+        AO7EM017:    $200,000 or more
+ 
+--------------------------------------------------------------------------------
+Citation and Use of NHGIS Data
+--------------------------------------------------------------------------------
+ 
+All persons are granted a limited license to use this documentation and the
+accompanying data, subject to the following conditions:
+
+* REDISTRIBUTION: You will not redistribute the data without permission.
+
+  You may publish a subset of the data to meet journal requirements for accessing 
+  data related to a particular publication. Contact us for permission for any other 
+  redistribution; we will consider requests for free and commercial redistribution.
+
+* CITATION: You will cite NHGIS appropriately.
+
+    * Publications and research reports employing NHGIS data (either tabular or GIS) 
+      should include the following citation:
+
+        Steven Manson, Jonathan Schroeder, David Van Riper, Tracy Kugler, and Steven Ruggles. 
+        IPUMS National Historical Geographic Information System: Version 17.0 
+        [dataset]. Minneapolis, MN: IPUMS. 2022. 
+        http://doi.org/10.18128/D050.V17.0
+
+    * For policy briefs, online resources, or articles in the popular press, we 
+      recommend that you cite the use of NHGIS data as follows:
+
+        IPUMS NHGIS, University of Minnesota, www.nhgis.org.
+
+These terms of use are a legally binding agreement. You can use the data only in 
+accordance with these terms, and any other use is a violation of the agreement. 
+Violations may result in revocation of the agreement and prohibition from using other 
+IPUMS data. If IPUMS or our partners are harmed from your violation, you are 
+responsible for all damages, including reasonable attorney's fees and expenses.
+        
+In addition, we request that users send us a copy of any publications, research
+reports, or educational material making use of the data or documentation.
+
+Send electronic material to: nhgis@umn.edu
+
+Printed matter should be sent to:
+
+    IPUMS NHGIS
+    Institute for Social Research and Data Innovation
+    University of Minnesota
+    50 Willey Hall
+    225 19th Ave S
+    Minneapolis, MN 55455
