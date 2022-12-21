@@ -200,4 +200,8 @@ check_pre <- fst::read_fst(here::here('data', 'google_traffic_march9to13.fst'))
 check_during <- fst::read_fst(here::here('data', 'google_traffic_march23to27.fst'))
 check_3mon <- fst::read_fst(here::here('data', 'google_traffic_jantomar2020.fst'))
 
+# 4e Create list of of datetimes with missing traffic data
+
+# 4f Create list of census tract ids with traffic data
+
 
