@@ -1,5 +1,5 @@
 --------------------------------------------------------------------------------
-Codebook for NHGIS data file 'nhgis0012_ds255_20215_tract'
+Codebook for NHGIS data file 'nhgis0018_ds255_20215_tract'
 --------------------------------------------------------------------------------
  
 Contents
@@ -31,7 +31,12 @@ Tables:
    Source code: B19001B
    NHGIS code:  AO68
  
-2. Household Income in the Past 12 Months (in 2021 Inflation-Adjusted Dollars) (White Alone, Not Hispanic or Latino Householder)
+2. Household Income in the Past 12 Months (in 2021 Inflation-Adjusted Dollars) (Asian Alone Householder)
+   Universe:    Households with a householder who is Asian alone
+   Source code: B19001D
+   NHGIS code:  AO7A
+ 
+3. Household Income in the Past 12 Months (in 2021 Inflation-Adjusted Dollars) (White Alone, Not Hispanic or Latino Householder)
    Universe:    Households with a householder who is White alone, not Hispanic or Latino
    Source code: B19001H
    NHGIS code:  AO7E
@@ -110,7 +115,29 @@ Data Type (E):
         AO68E016:    $150,000 to $199,999
         AO68E017:    $200,000 or more
  
-    Table 2:     Household Income in the Past 12 Months (in 2021 Inflation-Adjusted Dollars) (White Alone, Not Hispanic or Latino Householder)
+    Table 2:     Household Income in the Past 12 Months (in 2021 Inflation-Adjusted Dollars) (Asian Alone Householder)
+    Universe:    Households with a householder who is Asian alone
+    Source code: B19001D
+    NHGIS code:  AO7A
+        AO7AE001:    Total
+        AO7AE002:    Less than $10,000
+        AO7AE003:    $10,000 to $14,999
+        AO7AE004:    $15,000 to $19,999
+        AO7AE005:    $20,000 to $24,999
+        AO7AE006:    $25,000 to $29,999
+        AO7AE007:    $30,000 to $34,999
+        AO7AE008:    $35,000 to $39,999
+        AO7AE009:    $40,000 to $44,999
+        AO7AE010:    $45,000 to $49,999
+        AO7AE011:    $50,000 to $59,999
+        AO7AE012:    $60,000 to $74,999
+        AO7AE013:    $75,000 to $99,999
+        AO7AE014:    $100,000 to $124,999
+        AO7AE015:    $125,000 to $149,999
+        AO7AE016:    $150,000 to $199,999
+        AO7AE017:    $200,000 or more
+ 
+    Table 3:     Household Income in the Past 12 Months (in 2021 Inflation-Adjusted Dollars) (White Alone, Not Hispanic or Latino Householder)
     Universe:    Households with a householder who is White alone, not Hispanic or Latino
     Source code: B19001H
     NHGIS code:  AO7E
@@ -159,7 +186,29 @@ Data Type (M):
         AO68M016:    $150,000 to $199,999
         AO68M017:    $200,000 or more
  
-    Table 2:     Household Income in the Past 12 Months (in 2021 Inflation-Adjusted Dollars) (White Alone, Not Hispanic or Latino Householder)
+    Table 2:     Household Income in the Past 12 Months (in 2021 Inflation-Adjusted Dollars) (Asian Alone Householder)
+    Universe:    Households with a householder who is Asian alone
+    Source code: B19001D
+    NHGIS code:  AO7A
+        AO7AM001:    Total
+        AO7AM002:    Less than $10,000
+        AO7AM003:    $10,000 to $14,999
+        AO7AM004:    $15,000 to $19,999
+        AO7AM005:    $20,000 to $24,999
+        AO7AM006:    $25,000 to $29,999
+        AO7AM007:    $30,000 to $34,999
+        AO7AM008:    $35,000 to $39,999
+        AO7AM009:    $40,000 to $44,999
+        AO7AM010:    $45,000 to $49,999
+        AO7AM011:    $50,000 to $59,999
+        AO7AM012:    $60,000 to $74,999
+        AO7AM013:    $75,000 to $99,999
+        AO7AM014:    $100,000 to $124,999
+        AO7AM015:    $125,000 to $149,999
+        AO7AM016:    $150,000 to $199,999
+        AO7AM017:    $200,000 or more
+ 
+    Table 3:     Household Income in the Past 12 Months (in 2021 Inflation-Adjusted Dollars) (White Alone, Not Hispanic or Latino Householder)
     Universe:    Households with a householder who is White alone, not Hispanic or Latino
     Source code: B19001H
     NHGIS code:  AO7E
