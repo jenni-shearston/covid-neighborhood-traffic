@@ -362,6 +362,7 @@ ice_hhincome_race %>% filter(poly_id %in%gt_fips$poly_id) %>%
 # Notes: The ICE var with NH White and Asian as the extreme groups does not
 #        have much variability. 
 
+
 ####**********************
 #### 5: Save out data #### 
 ####**********************
