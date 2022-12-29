@@ -3,8 +3,8 @@
 .RData
 .Ruserdata
 passwords.R
-manuscript
-old_scripts
+manuscript/
+old_scripts/
 data/raw_data/EJI_2022_NY.csv              # too big
 documentation/EJI-2022-Documentation.pdf   # too big
 
