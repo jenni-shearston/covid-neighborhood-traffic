@@ -40,7 +40,7 @@ source(paste0(project.folder, 'packages.R'))
 source(paste0(project.folder, 'passwords.R'))
 
 # 0c Set up filepath(s)
-data_path <- paste0(project.folder, 'data/')
+raw_data_path <- paste0(project.folder, 'data/raw_data/')
 
 # 0b Load data
 # 0b.i Load traffic data
