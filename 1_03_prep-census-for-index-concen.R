@@ -15,6 +15,7 @@
 # 4: Map and review ICE vars
 # 5: Save out data
 
+## TO DO: INSPECT ANY CTS MISSING CENSUS DATA
 
 ####**************
 #### N: Notes ####
