@@ -6,4 +6,7 @@ passwords.R
 manuscript/
 old_scripts/
 EJI_2022_NY.csv                 
-EJI-2022-Documentation.pdf      
+EJI-2022-Documentation.pdf
+data/processed_data/gt2018.fst
+data/processed_data/gt2019.fst
+data/processed_data/gt2020.fst
