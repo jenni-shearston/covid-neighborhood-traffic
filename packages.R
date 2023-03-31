@@ -6,6 +6,7 @@
 # List of packages to use
 list.of.packages = c('broom',
                      'corrplot',
+                     'cowplot',
                      'data.table',
                      'doParallel',
                      'dlnm',

@@ -43,9 +43,12 @@ source(paste0(project.folder, 'packages.R'))
 # 0c Set up filepath(s)
 data_path <- paste0(project.folder, 'data/processed_data/')
 model_path <- paste0(project.folder, 'outputs/models/')
+figure_path <- paste0(project.folder, 'outputs/figures/')
+polygons_of_interest_path = here::here('data', 'nyc_census_tracts', 'nycgeo_census_tracts.shp')
 
 # 0d Load data
 fullData <- read_rds(paste0(data_path, 'full_dataset_wcovars_daily.rds'))
+tracts_sf <- st_read(polygons_of_interest_path)
 
 
 ####***********************************
@@ -86,7 +89,7 @@ fullDataS <- fullDataS %>%
   arrange(strata)
 
 # 1d Clean environment
-rm(fullData, fullDataF, fullDataS.2)
+rm(fullDataF, fullDataS.2)
 
 # 1e Calculate column values for mean and SD (or median and IQR) of census vars
 #    population, perc white, perc black
@@ -129,7 +132,112 @@ t1_traf <- fullDataS %>%
 # Two-panel chloropleth map showing traffic on a day before and a day after
 # implementation of NY on Pause
 
-# 2a 
+# 2a Determine min and max of two dates for plotting
+#    Note: min = 12.9; max = 93.7
+fullData %>% 
+  left_join(tracts_sf, by = c('poly_id' = 'geoid')) %>% ungroup() %>% 
+  filter(date == '2020-03-09') %>% 
+  summarise(max = max(prop_green, na.rm = T), min = min(prop_green, na.rm = T))
+fullData %>% 
+  left_join(tracts_sf, by = c('poly_id' = 'geoid')) %>% ungroup() %>% 
+  filter(date == '2020-03-23') %>% 
+  summarise(max = max(prop_green, na.rm = T), min = min(prop_green, na.rm = T))
+
+# 2b Create panel A - Monday before Pause was implemented
+fig1_a <- 
+  fullData %>% 
+  left_join(tracts_sf, by = c('poly_id' = 'geoid')) %>% 
+  filter(date == '2020-03-09') %>% 
+  ggplot(aes(geometry = geometry, fill = prop_green)) + 
+  geom_sf(lwd = 0.2) + 
+  annotate('text', x = 985000, y = 255000, label = 'A: 3/09/2020', size = 16/.pt) +
+  scale_fill_viridis(name = 'Perc. Streets w \n Free-flowing Traffic', 
+                     option = 'turbo', direction = -1,
+                     breaks = c(20, 40, 60, 80),
+                     limits = c(12, 94)) +
+  theme_void() +
+  theme(panel.grid = element_line(color = "transparent"),
+        text = element_text(size = 16))
+fig1_a
+
+# 2c Create panel B - Monday after Pause was implemented
+fig1_b <- 
+  fullData %>% 
+  left_join(tracts_sf, by = c('poly_id' = 'geoid')) %>% 
+  filter(date == '2020-03-23') %>% 
+  ggplot(aes(geometry = geometry, fill = prop_green)) + 
+  geom_sf(lwd = 0.2) + 
+  annotate('text', x = 985000, y = 255000, label = 'B: 3/23/2020', size = 16/.pt) +
+  scale_fill_viridis(name = 'Perc. Streets w \n Free-flowing Traffic', 
+                     option = 'turbo', direction = -1,
+                     breaks = c(20, 40, 60, 80),
+                     limits = c(12, 94)) +
+  theme_void() +
+  theme(panel.grid = element_line(color = "transparent"),
+        text = element_text(size = 16))
+fig1_b
+
+# 2d Combine panels into one plot and save
+tiff(paste0(figure_path, 'fig1_PrePostPauseChloroMap.tiff'),
+     units = "in", width = 14, height = 8, res = 300)
+plot_grid(fig1_a, fig1_b)
+dev.off()
+
+
+####*********************************
+#### 3: Prepare Manuscript Fig 2 #### 
+####*********************************
+
+# Two-panel chloropleth map showing ICE as one panel and EJI as the other
+# We filter to a single day only for computation efficiency; ICE and EJI are 
+# the same no matter what day is selected.
+
+# 3a Determine min and max of ICE var for plotting
+#    Note: min = -0.38; max = 0.65
+min(fullData$ice_hhincome_bw, na.rm = T)
+max(fullData$ice_hhincome_bw, na.rm = T)
+
+# 3b Create panel A - ICE
+fig2_a <- 
+  fullData %>% 
+  left_join(tracts_sf, by = c('poly_id' = 'geoid')) %>% 
+  mutate(ice_hhincome_bw_5 = factor(ice_hhincome_bw_5, levels = c('Q1', 'Q2', 'Q3', 'Q4', 'Q5'))) %>%
+  filter(date == '2020-03-09') %>% 
+  ggplot(aes(geometry = geometry, fill = ice_hhincome_bw_5)) + 
+  geom_sf(lwd = 0.2) + 
+  scale_fill_viridis(name = 'Index of Concentration \n at the Extremes', 
+                     option = 'inferno',
+                     discrete = T,
+                     labels = c('Q1 (Disadvantaged)', 'Q2', 'Q3', 'Q4',
+                                'Q5 (Privileged)', 'Not Enough Pop.')) +
+  theme_void() +
+  theme(panel.grid = element_line(color = "transparent"),
+        text = element_text(size = 16))
+fig2_a
+
+# 2c Create panel B - EJI
+fig2_b <- 
+  fullData %>% 
+  left_join(tracts_sf, by = c('poly_id' = 'geoid')) %>% 
+  mutate(eji_5 = factor(eji_5, levels = c('Q5', 'Q4', 'Q3', 'Q2', 'Q1'))) %>% 
+  filter(date == '2020-03-09') %>% 
+  ggplot(aes(geometry = geometry, fill = eji_5)) + 
+  geom_sf(lwd = 0.2) + 
+  scale_fill_viridis(name = 'Environmental \n Justice Index', 
+                     option = 'viridis',
+                     discrete = T,
+                     labels = c('Q5 (High Burden)', 'Q4', 'Q3', 'Q2', 
+                                'Q1 (Low Burden)', 'Not Enough Data')) +
+  theme_void() +
+  theme(panel.grid = element_line(color = "transparent"),
+        text = element_text(size = 16))
+fig2_b
+
+# 2d Combine panels into one plot and save
+tiff(paste0(figure_path, 'fig2_IceEjiChloroMap.tiff'),
+     units = "in", width = 14, height = 8, res = 300)
+plot_grid(fig2_a, fig2_b, labels = 'AUTO')
+dev.off()
 
 
 
