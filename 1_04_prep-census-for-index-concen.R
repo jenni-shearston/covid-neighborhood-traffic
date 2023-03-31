@@ -84,8 +84,8 @@ race <- read_csv(paste0(census_data_path, "nhgis_race-ethnicity_tract_15-19.csv"
                 ALUKE012, ALUKM001, ALUKM002, ALUKM003, ALUKM004, ALUKM005,
                 ALUKM006, ALUKM007, ALUKM008, ALUKM009, ALUKM012) %>% 
   rename(fips_code = GISJOIN, state_code = STATEA, county_code = COUNTYA,
-         tract_code = TRACTA, all_est = ALUKE001, nhwhite_est = ALUKE003,
-         nhblack_est = ALUKE004, nhai_est = ALUKE005, nhasian_est = ALUKE006,
+         tract_code = TRACTA, all_race_est = ALUKE001, nhwhite_race_est = ALUKE003,
+         nhblack_race_est = ALUKE004, nhai_est = ALUKE005, nhasian_est = ALUKE006,
          nhhawaii_est = ALUKE007, nhother_est = ALUKE008, nhmulti_est = ALUKE009,
          hispanic_est = ALUKE012, nh_est = ALUKE002,
          all_moe = ALUKM001, nhwhite_moe = ALUKM003,
@@ -183,12 +183,12 @@ hhincome <- read_csv(paste0(census_data_path, "nhgis_income_tract_15-19.csv")) %
 # 2a Convert race and ethnicity vars to long format for mapping
 # 2a.i Race vars
 race_chloropleth <- race %>% 
-  dplyr::select(poly_id, all_est, nhwhite_est:nhmulti_est) %>% 
-  pivot_longer(nhwhite_est:nhmulti_est, names_to = "race", values_to = "count") %>% 
-  mutate(prop = round((count/all_est)*100, digits = 0)) %>% 
+  dplyr::select(poly_id, all_race_est, nhwhite_race_est:nhmulti_est) %>% 
+  pivot_longer(nhwhite_race_est:nhmulti_est, names_to = "race", values_to = "count") %>% 
+  mutate(prop = round((count/all_race_est)*100, digits = 0)) %>% 
   mutate(race = case_when(
-    race == 'nhwhite_est' ~ 'NH White',
-    race == 'nhblack_est' ~ 'NH Black',
+    race == 'nhwhite_race_est' ~ 'NH White',
+    race == 'nhblack_race_est' ~ 'NH Black',
     race == 'nhai_est' ~ 'NH Amer. Indian or AK Native',
     race == 'nhasian_est' ~ 'NH Asian',
     race == 'nhhawaii_est' ~ 'NH Hawaiian or Pac. Isldr',
@@ -301,6 +301,13 @@ ice_hhincome_race <- hhincome_race %>%
          ice_hhincome_aw = round((higher_extreme - lower_extreme_aw)/total, digits = 2),
          poly_id = paste0(state_code, county_code, tract_code)) 
 
+# 3b Add vars w count of NH-Black pop, NH-White pop, and household income to
+#    use in descriptive statistics later
+ice_hhincome_race <- 
+  merge(x = ice_hhincome_race, y = race[, c('fips_code', 'nhblack_race_est', 
+                                            'nhwhite_race_est', 'all_race_est')], 
+        by = 'fips_code', all.x = TRUE)
+
 
 ####********************************
 #### 4: Map and review ICE vars #### 
@@ -398,7 +405,8 @@ mis <- ice_hhincome_race %>%
 
 # 5a Save out data
 ice_hhincome_race %>% 
-  dplyr::select(poly_id, ice_hhincome_bw, ice_hhincome_aw) %>% 
+  dplyr::select(poly_id, ice_hhincome_bw, ice_hhincome_aw,
+                all_race_est, nhblack_race_est, nhwhite_race_est) %>% 
     write_fst(path = paste0(processed_data_path, 'ice_census_vars_2010CTs.fst')) 
 
 

@@ -58,6 +58,7 @@ tracts_sf <- st_read(polygons_of_interest_path) %>%
 ####*************************************
 
 # 1a Merge data
+#    Note: May take a few seconds
 traf_eji_ice <- traf %>% 
   left_join(eji, by = c('poly_id' = 'geoid')) 
 traf_eji_ice <- traf_eji_ice %>% 
@@ -264,8 +265,7 @@ traf_eji_ice_daily <- traf_eji_ice_daily %>%
       rpl_hvm >= quants_eji_hvm[2] & rpl_hvm < quants_eji_hvm[3] ~ 'Q2',
       rpl_hvm >= quants_eji_hvm[3] ~ 'Q3')))
 
-# 3c Run tables to confirm
-#    missing obs counts match those above
+# 3c Run tables to confirm missing obs counts match those above
 table(traf_eji_ice_daily$ice_hhincome_bw_5, useNA = 'always')
 table(traf_eji_ice_daily$eji_5, useNA = 'always')
 table(traf_eji_ice_daily$eji_sens_5, useNA = 'always')
