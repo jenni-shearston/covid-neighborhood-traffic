@@ -1,7 +1,7 @@
 # Load and Prepare Census Data for Index of Conc at Extremes
 # F31 Google Traffic COVID ITS Analysis
 # Jenni A. Shearston 
-# Updated 12/21/2022
+# Updated 03/16/2023
 
 ####***********************
 #### Table of Contents #### 
@@ -9,7 +9,10 @@
 
 # N: Notes
 # 0: Preparation 
-# 1: Load and clean 
+# 1: Recalculate EJI with rankings based on NYC tracts
+# 2: Recalculate EJI with traffic related vars removed
+# 3: Map and review EJI vars
+# 4: Save out data
 
 
 ####**************
@@ -17,7 +20,24 @@
 ####**************
 
 # Na Description
-# In this script we 
+# In this script, we prepare the CDC / ATSDR environmental justice index for use
+# in NYC: https://www.atsdr.cdc.gov/placeandhealth/eji/technical_documentation.html
+# In order to make NYC-level rankings, we recalculated rankings using only NYC tracts 
+# as EJI rankings were originally calculated with all tracts nationally. We also
+# calculated a second EJI where we removed traffic related variables, for use in 
+# a sensitivity analysis. 
+
+# Of note, the EJI 2022 uses 2010 census tracts, which would leave 76 CTs missing
+# EJI data if we use 2020 census tracts for traffic data and would create spatial
+# misalignment between EJI CTs and traffic CTs. 
+# I considered imputing some 2020 census tracts with 2010 EJI data, for example, 
+# when a census tract was only split into smaller units. However, I chose not to use
+# this approach as many of the EJI variables are aggregated from spatial areas other  
+# than CTs, such as point source data with buffers for airport location and other vars. 
+# If the EJI had been calculated using 2020 CTs, each of the sub-CTs from a single
+# 2010 CT may actually have been given different values. Therefore, for this 
+# analysis, we use traffic aggregated to 2010 census tracts
+
 
 ####********************
 #### 0: Preparation #### 
@@ -32,20 +52,33 @@ source(paste0(project.folder, 'packages.R'))
 # 0c Set up filepath(s)
 raw_data_path <- paste0(project.folder, 'data/raw_data/')
 processed_data_path <- paste0(project.folder, 'data/processed_data/')
+polygons_of_interest_path = here::here('data', 'nyc_census_tracts', 'nycgeo_census_tracts.shp')
 
 # 0d Load list of census tracts with traffic data
-gt_fips <- read_fst(paste0(processed_data_path, 'gt_polyids.fst')) %>% na.omit()
+gt_fips <- read_rds(paste0(processed_data_path, 'gt_polyids_2010CTs.rds'))
 
 # 0e Load census tracts geo file for mapping
-tracts <- nycgeo::nyc_boundaries(geography = "tract")
+tracts <- st_read(polygons_of_interest_path) %>% janitor::clean_names()
 
 # 0f Load eji data and restrict to NYC
 eji <- read_csv(paste0(raw_data_path, 'EJI_2022_NY.csv')) %>% 
   janitor::clean_names() %>% 
   filter(countyfp == 5 | countyfp == 47 | countyfp == 61 | 
            countyfp == 81 | countyfp == 85) %>% 
-  mutate(geoid = as.character(geoid)) %>% 
-  na.omit()
+  mutate(geoid = as.character(geoid)) 
+
+# 0g Load 2010-->2020 CT crosswalk
+#    Note: the number of census tracts in NYC increased from 2,168 in 2010 to
+#          2,327 in 2020
+#          https://storymaps.arcgis.com/stories/d30850ba28944619b94e8ee4f746d5c4
+# cw <- read_csv(paste0(raw_data_path, 'nhgis_blk2010_blk2020_ge_36.csv'), col_types = 'ccnn') %>% 
+#   janitor::clean_names() %>% 
+#   mutate(countyfp = str_sub(geoid20, start = 3, end = 5),
+#          tract10 = str_sub(geoid10, end = -5),
+#          tract20 = str_sub(geoid20, end = -5)) %>% 
+#   filter(countyfp == '005' | countyfp == '047' | countyfp == '061' | 
+#            countyfp == '081' | countyfp == '085') %>% 
+#   dplyr::select(tract10, tract20) %>% distinct()
 
 
 ####***********************************************************
@@ -140,7 +173,7 @@ eji_chloropleth <- eji %>%
 # 3b Create chloropleth map -- EJI NYC rankings
 # 3b.i EJI score recalculated with NYC only tracts in ranking
 eji_nyc_chloropleth_map <- eji_nyc_chloropleth %>% 
-  filter(geoid %in% gt_fips$poly_id) %>% 
+  filter(geoid %in% gt_fips) %>% 
   ggplot() +
   geom_sf(aes(fill = rpl_eji, geometry = geometry), lwd = 0) +
   scale_fill_viridis_c(name = "EJI Score", 
@@ -154,7 +187,7 @@ eji_nyc_chloropleth_map <- eji_nyc_chloropleth %>%
 eji_nyc_chloropleth_map
 # 3b.ii Original EJI score using national tracts in ranking
 eji_chloropleth_map <- eji_chloropleth %>% 
-  filter(geoid %in% gt_fips$poly_id) %>% 
+  filter(geoid %in% gt_fips) %>% 
   ggplot() +
   geom_sf(aes(fill = rpl_eji, geometry = geometry), lwd = 0) +
   scale_fill_viridis_c(name = "EJI Score", 
@@ -169,7 +202,7 @@ eji_chloropleth_map
 # 3b.iii EJI score recalculated with NYC only tracts in ranking and an 
 #        adjusted EB module to remove traffic items
 eji_nyc_sens_chloropleth_map <- eji_nyc_chloropleth %>% 
-  filter(geoid %in% gt_fips$poly_id) %>% 
+  filter(geoid %in% gt_fips) %>% 
   ggplot() +
   geom_sf(aes(fill = rpl_eji_sens, geometry = geometry), lwd = 0) +
   scale_fill_viridis_c(name = "Mod. EJI Score", 
@@ -184,7 +217,7 @@ eji_nyc_sens_chloropleth_map
 
 # 3c Review range and central tendency of EJI score
 # 3c.i EJI score recalculated with NYC only tracts in ranking
-eji_nyc %>% filter(geoid %in% gt_fips$poly_id) %>% 
+eji_nyc %>% filter(geoid %in% gt_fips) %>% 
   summarise(min = min(rpl_eji, na.rm = T),
             max = max(rpl_eji, na.rm = T),
             mean = mean(rpl_eji, na.rm = T),
@@ -192,7 +225,7 @@ eji_nyc %>% filter(geoid %in% gt_fips$poly_id) %>%
             median = median(rpl_eji, na.rm = T),
             iqr = IQR(rpl_eji, na.rm = T))
 # 3c.ii Original EJI score using national tracts in ranking
-eji %>% filter(geoid %in% gt_fips$poly_id) %>% 
+eji %>% filter(geoid %in% gt_fips) %>% 
   summarise(min = min(rpl_eji, na.rm = T),
             max = max(rpl_eji, na.rm = T),
             mean = mean(rpl_eji, na.rm = T),
@@ -201,7 +234,7 @@ eji %>% filter(geoid %in% gt_fips$poly_id) %>%
             iqr = IQR(rpl_eji, na.rm = T))
 # 3c.iii EJI score recalculated with NYC only tracts in ranking and an 
 #        adjusted EB module to remove traffic items
-eji_nyc %>% filter(geoid %in% gt_fips$poly_id) %>% 
+eji_nyc %>% filter(geoid %in% gt_fips) %>% 
   summarise(min = min(rpl_eji_sens, na.rm = T),
             max = max(rpl_eji_sens, na.rm = T),
             mean = mean(rpl_eji_sens, na.rm = T),
@@ -211,20 +244,25 @@ eji_nyc %>% filter(geoid %in% gt_fips$poly_id) %>%
 
 # 3d Histogram of EJI score
 # 3d.i EJI score recalculated with NYC only tracts in ranking
-eji_nyc %>% filter(geoid %in% gt_fips$poly_id) %>% 
+eji_nyc %>% filter(geoid %in% gt_fips) %>% 
   ggplot() + geom_histogram(aes(x = rpl_eji))
 # 3d.ii Original EJI score using national tracts in ranking
-eji %>% filter(geoid %in% gt_fips$poly_id) %>% 
+eji %>% filter(geoid %in% gt_fips) %>% 
   ggplot() + geom_histogram(aes(x = rpl_eji))
 # 3d.iii EJI score recalculated with NYC only tracts in ranking and an 
 #        adjusted EB module to remove traffic items
-eji_nyc %>% filter(geoid %in% gt_fips$poly_id) %>% 
+eji_nyc %>% filter(geoid %in% gt_fips) %>% 
   ggplot() + geom_histogram(aes(x = rpl_eji_sens))
 
 # Notes: When using the NYC version there is greater variability (as to be expected),
 #        but the mean and median are still very similar. For both scores,
 #        tracts in the South Bronx have the highest env burden scores.
 #        When using the modified EJI for NYC, the min decreases to 0.0005
+
+# 3e Count CTs missing EJI values
+#    n = 8
+#    These are CTs that do not have some census data (see Script 1_04)
+CTs_mis_eji <- gt_fips[!gt_fips %in% eji_nyc$geoid]
 
 
 ####**********************
