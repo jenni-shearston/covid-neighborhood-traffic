@@ -1,0 +1,276 @@
+--------------------------------------------------------------------------------
+Codebook for NHGIS data file 'nhgis0021_ds245_20195_tract'
+--------------------------------------------------------------------------------
+ 
+Contents
+    - Data Summary
+    - Data Dictionary
+    - Citation and Use
+ 
+Additional documentation on NHGIS data sources is available at: 
+    https://www.nhgis.org/documentation/tabular-data 
+ 
+--------------------------------------------------------------------------------
+Data Summary
+--------------------------------------------------------------------------------
+ 
+Year:             2015-2019
+Geographic level: Census Tract (by State--County)
+Dataset:          2019 American Community Survey: 5-Year Data [2015-2019, Tracts & Larger Areas]
+   NHGIS code:    2015_2019_ACS5b
+   NHGIS ID:      ds245
+Breakdown(s):     Geographic Subarea:
+                     Total area (00)
+Data type(s):     (E) Estimates
+                  (M) Margins of error
+ 
+Tables:
+ 
+1. Household Income in the Past 12 Months (in 2019 Inflation-Adjusted Dollars) (Black or African American Alone Householder)
+   Universe:    Households with a householder who is Black or African American alone
+   Source code: B19001B
+   NHGIS code:  AMDS
+ 
+2. Household Income in the Past 12 Months (in 2019 Inflation-Adjusted Dollars) (Asian Alone Householder)
+   Universe:    Households with a householder who is Asian alone
+   Source code: B19001D
+   NHGIS code:  AMDU
+ 
+3. Household Income in the Past 12 Months (in 2019 Inflation-Adjusted Dollars) (White Alone, Not Hispanic or Latino Householder)
+   Universe:    Households with a householder who is White alone, not Hispanic or Latino
+   Source code: B19001H
+   NHGIS code:  AMDY
+ 
+--------------------------------------------------------------------------------
+Data Dictionary
+--------------------------------------------------------------------------------
+ 
+Context Fields 
+        GISJOIN:     GIS Join Match Code
+        YEAR:        Data File Year
+        STUSAB:      State Postal Abbreviation
+        REGIONA:     Region Code
+        DIVISIONA:   Division Code
+        STATE:       State Name
+        STATEA:      State Code
+        COUNTY:      County Name
+        COUNTYA:     County Code
+        COUSUBA:     County Subdivision Code
+        PLACEA:      Place Code
+        TRACTA:      Census Tract Code
+        CONCITA:     Consolidated City Code
+        AIANHHA:     American Indian Area/Alaska Native Area/Hawaiian Home Land Code
+        RES_ONLYA:   American Indian Area/Alaska Native Area (Reservation or Statistical Entity Only) Code
+        TRUSTA:      American Indian Area (Off-Reservation Trust Land Only)/Hawaiian Home Land Code
+        AIHHTLI:     American Indian Trust Land/ Hawaiian Home Land Indicator
+        AITSCEA:     Tribal Subdivision/Remainder Code
+        ANRCA:       Alaska Native Regional Corporation Code
+        CBSAA:       Metropolitan Statistical Area/Micropolitan Statistical Area Code
+        CSAA:        Combined Statistical Area Code
+        METDIVA:     Metropolitan Division Code
+        NECTAA:      New England City and Town Area Code
+        CNECTAA:     Combined New England City and Town Area Code
+        NECTADIVA:   New England City and Town Area Division Code
+        UAA:         Urban Area Code
+        CDCURRA:     Congressional District (2019-2021, 116th Congress) Code
+        SLDUA:       State Legislative District (Upper Chamber) Code
+        SLDLA:       State Legislative District (Lower Chamber) Code
+        ZCTA5A:      5-Digit ZIP Code Tabulation Area Code
+        SUBMCDA:     Subminor Civil Division Code
+        SDELMA:      School District (Elementary)/Remainder Code
+        SDSECA:      School District (Secondary)/Remainder Code
+        SDUNIA:      School District (Unified)/Remainder Code
+        PCI:         Principal City Indicator
+        PUMAA:       Public Use Microdata Area Code
+        GEOID:       Census Geographic Identifier
+        BTTRA:       Tribal Census Tract Code
+ 
+Data Type (E):
+    Estimates
+ 
+        NAME_E:      Area Name
+ 
+    Table 1:     Household Income in the Past 12 Months (in 2019 Inflation-Adjusted Dollars) (Black or African American Alone Householder)
+    Universe:    Households with a householder who is Black or African American alone
+    Source code: B19001B
+    NHGIS code:  AMDS
+        AMDSE001:    Total
+        AMDSE002:    Less than $10,000
+        AMDSE003:    $10,000 to $14,999
+        AMDSE004:    $15,000 to $19,999
+        AMDSE005:    $20,000 to $24,999
+        AMDSE006:    $25,000 to $29,999
+        AMDSE007:    $30,000 to $34,999
+        AMDSE008:    $35,000 to $39,999
+        AMDSE009:    $40,000 to $44,999
+        AMDSE010:    $45,000 to $49,999
+        AMDSE011:    $50,000 to $59,999
+        AMDSE012:    $60,000 to $74,999
+        AMDSE013:    $75,000 to $99,999
+        AMDSE014:    $100,000 to $124,999
+        AMDSE015:    $125,000 to $149,999
+        AMDSE016:    $150,000 to $199,999
+        AMDSE017:    $200,000 or more
+ 
+    Table 2:     Household Income in the Past 12 Months (in 2019 Inflation-Adjusted Dollars) (Asian Alone Householder)
+    Universe:    Households with a householder who is Asian alone
+    Source code: B19001D
+    NHGIS code:  AMDU
+        AMDUE001:    Total
+        AMDUE002:    Less than $10,000
+        AMDUE003:    $10,000 to $14,999
+        AMDUE004:    $15,000 to $19,999
+        AMDUE005:    $20,000 to $24,999
+        AMDUE006:    $25,000 to $29,999
+        AMDUE007:    $30,000 to $34,999
+        AMDUE008:    $35,000 to $39,999
+        AMDUE009:    $40,000 to $44,999
+        AMDUE010:    $45,000 to $49,999
+        AMDUE011:    $50,000 to $59,999
+        AMDUE012:    $60,000 to $74,999
+        AMDUE013:    $75,000 to $99,999
+        AMDUE014:    $100,000 to $124,999
+        AMDUE015:    $125,000 to $149,999
+        AMDUE016:    $150,000 to $199,999
+        AMDUE017:    $200,000 or more
+ 
+    Table 3:     Household Income in the Past 12 Months (in 2019 Inflation-Adjusted Dollars) (White Alone, Not Hispanic or Latino Householder)
+    Universe:    Households with a householder who is White alone, not Hispanic or Latino
+    Source code: B19001H
+    NHGIS code:  AMDY
+        AMDYE001:    Total
+        AMDYE002:    Less than $10,000
+        AMDYE003:    $10,000 to $14,999
+        AMDYE004:    $15,000 to $19,999
+        AMDYE005:    $20,000 to $24,999
+        AMDYE006:    $25,000 to $29,999
+        AMDYE007:    $30,000 to $34,999
+        AMDYE008:    $35,000 to $39,999
+        AMDYE009:    $40,000 to $44,999
+        AMDYE010:    $45,000 to $49,999
+        AMDYE011:    $50,000 to $59,999
+        AMDYE012:    $60,000 to $74,999
+        AMDYE013:    $75,000 to $99,999
+        AMDYE014:    $100,000 to $124,999
+        AMDYE015:    $125,000 to $149,999
+        AMDYE016:    $150,000 to $199,999
+        AMDYE017:    $200,000 or more
+ 
+Data Type (M):
+    Margins of error
+ 
+        NAME_M:      Area Name
+ 
+    Table 1:     Household Income in the Past 12 Months (in 2019 Inflation-Adjusted Dollars) (Black or African American Alone Householder)
+    Universe:    Households with a householder who is Black or African American alone
+    Source code: B19001B
+    NHGIS code:  AMDS
+        AMDSM001:    Total
+        AMDSM002:    Less than $10,000
+        AMDSM003:    $10,000 to $14,999
+        AMDSM004:    $15,000 to $19,999
+        AMDSM005:    $20,000 to $24,999
+        AMDSM006:    $25,000 to $29,999
+        AMDSM007:    $30,000 to $34,999
+        AMDSM008:    $35,000 to $39,999
+        AMDSM009:    $40,000 to $44,999
+        AMDSM010:    $45,000 to $49,999
+        AMDSM011:    $50,000 to $59,999
+        AMDSM012:    $60,000 to $74,999
+        AMDSM013:    $75,000 to $99,999
+        AMDSM014:    $100,000 to $124,999
+        AMDSM015:    $125,000 to $149,999
+        AMDSM016:    $150,000 to $199,999
+        AMDSM017:    $200,000 or more
+ 
+    Table 2:     Household Income in the Past 12 Months (in 2019 Inflation-Adjusted Dollars) (Asian Alone Householder)
+    Universe:    Households with a householder who is Asian alone
+    Source code: B19001D
+    NHGIS code:  AMDU
+        AMDUM001:    Total
+        AMDUM002:    Less than $10,000
+        AMDUM003:    $10,000 to $14,999
+        AMDUM004:    $15,000 to $19,999
+        AMDUM005:    $20,000 to $24,999
+        AMDUM006:    $25,000 to $29,999
+        AMDUM007:    $30,000 to $34,999
+        AMDUM008:    $35,000 to $39,999
+        AMDUM009:    $40,000 to $44,999
+        AMDUM010:    $45,000 to $49,999
+        AMDUM011:    $50,000 to $59,999
+        AMDUM012:    $60,000 to $74,999
+        AMDUM013:    $75,000 to $99,999
+        AMDUM014:    $100,000 to $124,999
+        AMDUM015:    $125,000 to $149,999
+        AMDUM016:    $150,000 to $199,999
+        AMDUM017:    $200,000 or more
+ 
+    Table 3:     Household Income in the Past 12 Months (in 2019 Inflation-Adjusted Dollars) (White Alone, Not Hispanic or Latino Householder)
+    Universe:    Households with a householder who is White alone, not Hispanic or Latino
+    Source code: B19001H
+    NHGIS code:  AMDY
+        AMDYM001:    Total
+        AMDYM002:    Less than $10,000
+        AMDYM003:    $10,000 to $14,999
+        AMDYM004:    $15,000 to $19,999
+        AMDYM005:    $20,000 to $24,999
+        AMDYM006:    $25,000 to $29,999
+        AMDYM007:    $30,000 to $34,999
+        AMDYM008:    $35,000 to $39,999
+        AMDYM009:    $40,000 to $44,999
+        AMDYM010:    $45,000 to $49,999
+        AMDYM011:    $50,000 to $59,999
+        AMDYM012:    $60,000 to $74,999
+        AMDYM013:    $75,000 to $99,999
+        AMDYM014:    $100,000 to $124,999
+        AMDYM015:    $125,000 to $149,999
+        AMDYM016:    $150,000 to $199,999
+        AMDYM017:    $200,000 or more
+ 
+--------------------------------------------------------------------------------
+Citation and Use of NHGIS Data
+--------------------------------------------------------------------------------
+ 
+All persons are granted a limited license to use this documentation and the
+accompanying data, subject to the following conditions:
+
+* REDISTRIBUTION: You will not redistribute the data without permission.
+
+  You may publish a subset of the data to meet journal requirements for accessing 
+  data related to a particular publication. Contact us for permission for any other 
+  redistribution; we will consider requests for free and commercial redistribution.
+
+* CITATION: You will cite NHGIS appropriately.
+
+    * Publications and research reports employing NHGIS data (either tabular or GIS) 
+      should include the following citation:
+
+        Steven Manson, Jonathan Schroeder, David Van Riper, Tracy Kugler, and Steven Ruggles. 
+        IPUMS National Historical Geographic Information System: Version 17.0 
+        [dataset]. Minneapolis, MN: IPUMS. 2022. 
+        http://doi.org/10.18128/D050.V17.0
+
+    * For policy briefs, online resources, or articles in the popular press, we 
+      recommend that you cite the use of NHGIS data as follows:
+
+        IPUMS NHGIS, University of Minnesota, www.nhgis.org.
+
+These terms of use are a legally binding agreement. You can use the data only in 
+accordance with these terms, and any other use is a violation of the agreement. 
+Violations may result in revocation of the agreement and prohibition from using other 
+IPUMS data. If IPUMS or our partners are harmed from your violation, you are 
+responsible for all damages, including reasonable attorney's fees and expenses.
+        
+In addition, we request that users send us a copy of any publications, research
+reports, or educational material making use of the data or documentation.
+
+Send electronic material to: nhgis@umn.edu
+
+Printed matter should be sent to:
+
+    IPUMS NHGIS
+    Institute for Social Research and Data Innovation
+    University of Minnesota
+    50 Willey Hall
+    225 19th Ave S
+    Minneapolis, MN 55455
