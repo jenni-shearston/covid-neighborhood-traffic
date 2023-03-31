@@ -33,9 +33,9 @@
 # 0a Declare root directory
 project.folder <- paste0(print(here::here()),'/')
 
-# 0b Load packages & passwords
+# 0b Load packages & clean environment
 source(paste0(project.folder, 'packages.R'))
-source(paste0(project.folder, 'passwords.R'))
+rm(list.of.packages, new.packages)
 
 # 0c Set up filepath(s)
 data_path <- paste0(project.folder, 'data/processed_data/')
@@ -91,6 +91,9 @@ fullDataS.5 <- fullDataF %>% group_by(eji_hvm_3) %>% nest() %>%
 fullDataS <- fullDataS %>% 
   bind_rows(fullDataS.2, fullDataS.3, fullDataS.4, fullDataS.5) %>% 
   filter(!is.na(strata))
+
+# 1d Clean environment
+rm(fullData, fullDataF, fullDataS.2, fullDataS.3, fullDataS.4, fullDataS.5)
 
 
 ####****************************************************
@@ -156,15 +159,46 @@ analyze_trafPause <- function(strata, dataForMod, outcome, analysis, outputPath)
 #### 3: Run Models #### 
 ####*******************
 
-## ADD PARALLELIZATION
+# 3a Set up parallelization
+# 3a.i Get number of cores
+#      Note: We subtract 2 cores to reserve for other tasks
+n.cores <- parallel::detectCores() - 2
+# 3a.ii Create the cluster
+my.cluster <- parallel::makeCluster(
+  n.cores,
+  type = 'FORK')
+# 3a.iii Register cluster to be used by %dopar%
+doParallel::registerDoParallel(cl = my.cluster)
 
-# 3a Run models for prop_green outcome
-#    Note: Run individually, each model takes ~ 15 min
-#          Run in parallel, 19 strata take ~ xx min
-tictoc::tic('Run all strata')
+# 3b Run models for prop_green outcome
+#    Note: Run in parallel, 19 strata take ~ xx min
+#          When running in parallel the 'slice' step in 2h where old models are 
+#          removed from the modTable does not work correctly
+#          b/c each core does the step independently (although the table is saved)
+# 3b.i Parallel option (do this if running anything more than 2 strata)
+tictoc::tic('Run 19 strata in parallel')
+mod_results <- 
+  foreach(
+    i = 1:length(fullDataS$strata),
+    .combine = 'rbind'
+  ) %dopar% {
+    analyze_trafPause(strata = fullDataS$strata[[i]], dataForMod = fullDataS$data[[i]], 
+                      outcome = 'propGreen', analysis = 'main', outputPath = model_path)}
+stopCluster(my.cluster)
+tictoc::toc()
+mod_results <- mod_results %>% 
+  group_by(model_identifier) %>% 
+  arrange(desc(run_date)) %>% 
+  slice(0:1) %>% 
+  filter(!is.na(model_identifier)) %>% 
+  write_csv(paste0(model_path, 'model_results_table.csv'))
+# 3b.ii For loop option if running only one or two models
+#    Note: One model takes ~ 15 min, two models take ~ 32 min
+tictoc::tic('Run X strata in for loop')
 for(i in 1:length(fullDataS$strata)){
   analyze_trafPause(strata = fullDataS$strata[[i]], dataForMod = fullDataS$data[[i]], 
                     outcome = 'propGreen', analysis = 'main', outputPath = model_path)
+  print(fullData$strata[[i]])
 }
 tictoc::toc()
 
@@ -175,7 +209,9 @@ tictoc::toc()
 
 
 
-# solo model for experimenting
+
+
+# Solo model for experimenting
 # ~15 minutes
 tictoc::tic('one model')
 mod <- gamm4::gamm4(prop_green ~ as.factor(pause) + time_elapsed 
@@ -184,10 +220,6 @@ mod <- gamm4::gamm4(prop_green ~ as.factor(pause) + time_elapsed
                     random = ~(1|poly_id), family = gaussian(), 
                     data = fullDataS$data[[1]])
 tictoc::toc()
-
-
-
-
 
 
 ###### OTHER MODELS TO RUN
