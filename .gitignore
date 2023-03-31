@@ -7,6 +7,8 @@ manuscript/
 old_scripts/
 EJI_2022_NY.csv                 
 EJI-2022-Documentation.pdf
-data/processed_data/gt2018.fst
-data/processed_data/gt2019.fst
-data/processed_data/gt2020.fst
+data/processed_data/
+data/needed_for_gt_to_polygons_function/poly_matrix_nyc_2010CTs.rds
+data/needed_for_gt_to_polygons_function/poly_matrix_nyc_2020CTs.rds
+outputs/models/iceHhincomeBwQ1_propGreen_main.rds
+outputs/models/iceHhincomeBwQ2_propGreen_main.rds
