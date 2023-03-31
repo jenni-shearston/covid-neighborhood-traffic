@@ -65,7 +65,7 @@ ice_census_chloropleth <- tracts %>% full_join(ice_census, by = "geoid")
 ice_census_chloropleth_map <- ice_census_chloropleth %>% 
   filter(!is.na(ice_var)) %>% 
   ggplot() +
-  geom_sf(aes(fill = ice_value), lwd = 0) +
+  geom_sf(aes(fill = ice_value), lwd = 0) + # Adding 'colour = NA' will remove boundaries around each ct
   scale_fill_viridis_c(name = "", 
                        option = "inferno",
                        breaks = c(-1, 1),
@@ -416,6 +416,21 @@ interaction_plot_df %>%
   facet_grid(~model) +
   ylab("NY on PAUSE Effect Estimate") + xlab("ICE Value") + 
   theme_bw(base_size = 16)
+dev.off()
+
+
+
+############# could be useful
+tiff("./figures/sample_google_color_map.tiff",
+     units = "in", width = 12, height = 7, res = 300)
+traf_sf %>% filter(captured_datetime == '0121201530') %>% 
+  pivot_longer(cols = gt_pixcount_maroon:gt_pixcount_gray,
+               names_to = 'gt_color',
+               values_to = 'count') %>% 
+  mutate(gt_color = factor(str_sub(gt_color, start = 13),
+                           levels = c('gray', 'green', 'orange', 'red', 'maroon'))) %>% 
+  ggplot() + geom_sf(aes(geometry = geometry, fill = count/road_pixels)) +
+  facet_wrap(~gt_color) + theme_void()
 dev.off()
 
 
