@@ -1,0 +1,206 @@
+# Run Main Models
+# F31 Google Traffic COVID ITS Analysis
+# Jenni A. Shearston 
+# Updated 03/28/2023
+
+####***********************
+#### Table of Contents #### 
+####***********************
+
+# N: Notes
+# 0: Preparation 
+# 1: 
+
+
+####**************
+#### N: Notes ####
+####**************
+
+# Na Description
+# In this script we 
+
+# May be useful:
+# Resource for adding autocorrelation structure to mixed model with nlme::lme
+# http://bbolker.github.io/mixedmodels-misc/ecostats_chap.html
+# short summary from stack exchange, which linked to B Bolker's github:
+# https://stackoverflow.com/questions/49796175/how-to-check-and-control-for-autocorrelation-in-a-mixed-effect-model-of-longitud
+
+
+####********************
+#### 0: Preparation #### 
+####********************
+
+# 0a Declare root directory
+project.folder <- paste0(print(here::here()),'/')
+
+# 0b Load packages & passwords
+source(paste0(project.folder, 'packages.R'))
+source(paste0(project.folder, 'passwords.R'))
+
+# 0c Set up filepath(s)
+data_path <- paste0(project.folder, 'data/processed_data/')
+model_path <- paste0(project.folder, 'outputs/models/')
+
+# 0d Load data
+fullData <- read_rds(paste0(data_path, 'full_dataset_wcovars_daily.rds'))
+
+
+####*************************************
+#### 1: Split, Filter & Nest Dataset #### 
+####*************************************
+
+# 1a Filter dataset to exclude Phase 1 reopening and beyond
+#    Note: NYC entered Phase 1 reopening on June 8, 2020
+fullDataF <- fullData %>% filter(date < '2020-06-08')
+
+# 1b Nest by strata
+# 1b.i ICE HH Income and BW Race, 5 quantiles
+fullDataS <- fullDataF %>% group_by(ice_hhincome_bw_5) %>% nest() %>% 
+  rename(strata = ice_hhincome_bw_5) %>% 
+  mutate(strata = case_when(
+    strata == 'Q1' ~ 'iceHhincomeBwQ1', strata == 'Q2' ~ 'iceHhincomeBwQ2',
+    strata == 'Q3' ~ 'iceHhincomeBwQ3', strata == 'Q4' ~ 'iceHhincomeBwQ4',
+    strata == 'Q5' ~ 'iceHhincomeBwQ5'))
+# 1b.ii EJI, 5 quantiles
+fullDataS.2 <- fullDataF %>% group_by(eji_5) %>% nest() %>% 
+  rename(strata = eji_5) %>% 
+  mutate(strata = case_when(
+    strata == 'Q1' ~ 'ejiQ1', strata == 'Q2' ~ 'ejiQ2',
+    strata == 'Q3' ~ 'ejiQ3', strata == 'Q4' ~ 'ejiQ4',
+    strata == 'Q5' ~ 'ejiQ5'))
+# 1b.iii EJI EBM Module, 3 quantiles
+fullDataS.3 <- fullDataF %>% group_by(eji_ebm_3) %>% nest() %>% 
+  rename(strata = eji_ebm_3) %>% 
+  mutate(strata = case_when(
+    strata == 'Q1' ~ 'ejiEbmQ1', strata == 'Q2' ~ 'ejiEbmQ2', 
+    strata == 'Q3' ~ 'ejiEbmQ3'))
+# 1b.iv EJI SVM Module, 3 quantiles
+fullDataS.4 <- fullDataF %>% group_by(eji_svm_3) %>% nest() %>% 
+  rename(strata = eji_svm_3) %>% 
+  mutate(strata = case_when(
+    strata == 'Q1' ~ 'ejiSvmQ1', strata == 'Q2' ~ 'ejiSvmQ2', 
+    strata == 'Q3' ~ 'ejiSvmQ3'))
+# 1b.v EJI HVM Module, 3 quantiles
+fullDataS.5 <- fullDataF %>% group_by(eji_hvm_3) %>% nest() %>% 
+  rename(strata = eji_hvm_3) %>% 
+  mutate(strata = case_when(
+    strata == 'Q1' ~ 'ejiHvmQ1', strata == 'Q2' ~ 'ejiHvmQ2', 
+    strata == 'Q3' ~ 'ejiHvmQ3'))
+
+# 1c Bind together
+fullDataS <- fullDataS %>% 
+  bind_rows(fullDataS.2, fullDataS.3, fullDataS.4, fullDataS.5) %>% 
+  filter(!is.na(strata))
+
+
+####****************************************************
+#### 2: Create Function for Running & Saving Models #### 
+####****************************************************
+
+# 2a Initialize function
+analyze_trafPause <- function(strata, dataForMod, outcome, analysis, outputPath){
+                              # strata <- 'fullDataS$strata[[i]]'; 
+                              # dataForMod <- fullDataS$data[[i]];
+                              # outcome <- 'propGreen';
+                              # analysis <- 'main';
+                              # outputPath <- model_path
+  
+  # 2b Create model identifier
+  modelIdentifier <- paste0(strata, '_', outcome, '_', analysis)
+  
+  # 2c Create intervention model(s)
+  #    Notes: Time terms are used to account for temporal autocorrelation
+  #           Tensor term is used to account for spatial autocorrelation
+  #             We estimate 8 knots for lat b/c study area is ~ 8 mi
+  #             We estimate 4 knots for lon b/c study area is ~ 4 mi
+  
+      # 2c.i Outcome == propGreen
+      if (str_detect(outcome, 'propGreen')){
+        
+        mod <- gamm4::gamm4(prop_green ~ as.factor(pause) + time_elapsed 
+                            + as.factor(year) + as.factor(month) + as.factor(dow) 
+                            + t2(lat, lon, k = c(8, 4), bs = 'cr'),
+                            random = ~(1|poly_id), family = gaussian(), 
+                            data = dataForMod)}
+  
+  # 2d Save model
+  mod %>% saveRDS(paste0(outputPath, modelIdentifier, '.rds'))
+  
+  # 2e Extract desired model coefficients and n
+  tidy_mod <- tidy(mod$gam, parametric = TRUE, conf.int = TRUE)
+  model_n <- dataForMod %>% na.omit() %>% summarise(n = as.integer(n()))
+  
+  # 2f Read in model results table
+  modTable <- read_csv(paste0(outputPath, 'model_results_table.csv'), 
+                       col_types = c('c', 'i', 'n', 'n', 'n', 'T'))
+  
+  # 2g Add this iteration's model results to the set of model results
+  modTable[1 + nrow(modTable),] <- list(modelIdentifier, model_n$n,
+                                        tidy_mod$estimate[2], tidy_mod$conf.low[2], tidy_mod$conf.high[2],
+                                        Sys.time())
+  
+  # 2h Remove old models and save
+  #    Note: The slice step keeps only the earliest model results for each 
+  #          strata-outcome-analysis combo
+  modTable %>% 
+    group_by(model_identifier) %>% 
+    arrange(desc(run_date)) %>% 
+    slice(0:1) %>% 
+    filter(!is.na(model_identifier)) %>% 
+    write_csv(paste0(outputPath, 'model_results_table.csv'))
+  
+}
+
+
+####*******************
+#### 3: Run Models #### 
+####*******************
+
+## ADD PARALLELIZATION
+
+# 3a Run models for prop_green outcome
+#    Note: Run individually, each model takes ~ 15 min
+#          Run in parallel, 19 strata take ~ xx min
+tictoc::tic('Run all strata')
+for(i in 1:length(fullDataS$strata)){
+  analyze_trafPause(strata = fullDataS$strata[[i]], dataForMod = fullDataS$data[[i]], 
+                    outcome = 'propGreen', analysis = 'main', outputPath = model_path)
+}
+tictoc::toc()
+
+
+####*************************
+#### 4: Model Evaluation #### 
+####*************************
+
+
+
+# solo model for experimenting
+# ~15 minutes
+tictoc::tic('one model')
+mod <- gamm4::gamm4(prop_green ~ as.factor(pause) + time_elapsed 
+                    + as.factor(year) + as.factor(month) + as.factor(dow) 
+                    + t2(lat, lon, k = c(8, 4), bs = 'cr'),
+                    random = ~(1|poly_id), family = gaussian(), 
+                    data = fullDataS$data[[1]])
+tictoc::toc()
+
+
+
+
+
+
+###### OTHER MODELS TO RUN
+# effect modification by rush hour / not and by daytime / nighttime?
+# if correlation between two traffic vars is less than .9, try running one strata while
+#   i'm writing up the paper to see if it's worth adding as a secondary analysis
+# sens: removing traffic vars from eji
+# sens: play with knots on tensor term. not sure what range to assess - check w MAK
+# sens: repeat with proportion green+gray
+
+# in discussion of paper
+#  be sure to discuss how pixel count accounts for road class
+
+
+
+
