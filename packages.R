@@ -13,6 +13,7 @@ list.of.packages = c('broom',
                      'fst',
                      'furrr',
                      'future',
+                     'gamm4',
                      'here',
                      'Hmisc',
                      'httr',
@@ -29,7 +30,9 @@ list.of.packages = c('broom',
                      'stringr',
                      'survival',
                      'tidycensus',
+                     'tidyr',
                      'tidyverse', 
+                     'viridis',
                      'wesanderson'
 )
 
