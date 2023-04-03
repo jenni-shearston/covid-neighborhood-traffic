@@ -171,11 +171,11 @@ my.cluster <- parallel::makeCluster(
 doParallel::registerDoParallel(cl = my.cluster)
 
 # 3b Run models for prop_green outcome
-#    Note: Run in parallel, 19 strata take ~ xx min
+#    Note: Run in parallel, 19 strata take ~ 4.3 hrs
 #          When running in parallel the 'slice' step in 2h where old models are 
 #          removed from the modTable does not work correctly
 #          b/c each core does the step independently (although the table is saved)
-# 3b.i Parallel option (do this if running anything more than 2 strata)
+# 3b.i Parallel option 
 tictoc::tic('Run 19 strata in parallel')
 mod_results <- 
   foreach(
@@ -192,7 +192,7 @@ mod_results <- mod_results %>%
   slice(0:1) %>% 
   filter(!is.na(model_identifier)) %>% 
   write_csv(paste0(model_path, 'model_results_table.csv'))
-# 3b.ii For loop option if running only one or two models
+# 3b.ii For loop option 
 #    Note: One model takes ~ 15 min, two models take ~ 32 min
 tictoc::tic('Run X strata in for loop')
 for(i in 1:length(fullDataS$strata)){

@@ -49,11 +49,12 @@ polygons_of_interest_path = here::here('data', 'nyc_census_tracts', 'nycgeo_cens
 # 0d Load data
 fullData <- read_rds(paste0(data_path, 'full_dataset_wcovars_daily.rds'))
 tracts_sf <- st_read(polygons_of_interest_path)
+mod_results <- read_csv(paste0(model_path, 'model_results_table.csv'))
 
 
-####***********************************
-#### 1: Prepare Manuscript Table 1 #### 
-####***********************************
+####*********************************************************
+#### 1: Prepare Descriptive Table for EJI/ICE Strata CTs #### 
+####*********************************************************
 
 # 1a Filter dataset to exclude Phase 1 reopening and beyond
 #    Note: NYC entered Phase 1 reopening on June 8, 2020
@@ -89,7 +90,7 @@ fullDataS <- fullDataS %>%
   arrange(strata)
 
 # 1d Clean environment
-rm(fullDataF, fullDataS.2)
+rm(fullDataS.2)
 
 # 1e Calculate column values for mean and SD (or median and IQR) of census vars
 #    population, perc white, perc black
@@ -125,9 +126,9 @@ t1_traf <- fullDataS %>%
   arrange(strata)
 
 
-####*********************************
-#### 2: Prepare Manuscript Fig 1 #### 
-####*********************************
+####*******************************************************
+#### 2: Prepare Chloropleth Traffic Pre/Post Pause Map #### 
+####*******************************************************
 
 # Two-panel chloropleth map showing traffic on a day before and a day after
 # implementation of NY on Pause
@@ -184,9 +185,9 @@ plot_grid(fig1_a, fig1_b)
 dev.off()
 
 
-####*********************************
-#### 3: Prepare Manuscript Fig 2 #### 
-####*********************************
+####******************************************
+#### 3: Prepare Chloropleth EJI / ICE Map #### 
+####******************************************
 
 # Two-panel chloropleth map showing ICE as one panel and EJI as the other
 # We filter to a single day only for computation efficiency; ICE and EJI are 
@@ -239,6 +240,148 @@ tiff(paste0(figure_path, 'fig2_IceEjiChloroMap.tiff'),
 plot_grid(fig2_a, fig2_b, labels = 'AUTO')
 dev.off()
 
+
+####*********************************
+#### 4: Prepare Time Series Plot #### 
+####*********************************
+
+# One panel time series plot with EJI and ICE quantiles specified in color
+
+# 4a Create function to aggregate traffic data 
+aggTrafByStrata = function(df){
+  df <- df %>% group_by(date) %>% 
+    summarise(mean_propGreen = round(mean(prop_green, na.rm = T), digits = 1))
+}
+
+# 4b Aggregate traffic data to EJI and ICE quantiles
+f3_traf_strata <- 
+  fullDataS %>% 
+  filter(str_detect(strata, 'iceHhincome|ejiQ')) %>% 
+  mutate(agg_traf_strata = map(.x = data, ~ aggTrafByStrata(.x))) %>% 
+  dplyr::select(-data) %>% unnest(agg_traf_strata) %>% 
+  filter(date < '2020-06-08') %>% 
+  mutate(strata_label = strata,
+         strata_label = str_replace(strata_label, 'eji', 'EJI'), 
+         strata_label = str_replace(strata_label, 'ice', 'ICE'),
+         strata_label = str_replace(strata_label, 'Q', ' Q'),
+         strata_label = str_replace(strata_label, 'HhincomeBw', '')) %>% 
+  mutate(facet_label = ifelse(str_detect(strata_label, 'EJI'), 'EJI', 'ICE'))
+
+# 4c Create time series plot
+fig3 <- f3_traf_strata %>% 
+  ggplot(aes(x = date, y = mean_propGreen, color = strata_label)) +
+  geom_line(alpha = 0.25) +
+  geom_vline(aes(xintercept = ymd("2020-03-22")), color = "black",
+             linetype = "dashed") +
+  geom_smooth(aes(color = strata_label)) +
+  scale_color_viridis_d(name = '') + 
+  facet_wrap(~ facet_label) +
+  xlab('Date') + ylab('% Streets w Free-flowing Traffic') + 
+  theme_bw() +
+  theme(text = element_text(size = 16))
+fig3
+
+# 4d Save plot
+tiff(paste0(figure_path, 'fig3_TrafficTimeseriesPlot.tiff'),
+     units = "in", width = 12, height = 7, res = 300)
+fig3
+dev.off()
+
+####******************************************
+#### 5: Prepare Model Results Forest Plot #### 
+####******************************************
+
+# 5a Clean strata names for plotting
+mod_results <- mod_results %>% 
+  mutate(mod_label = as.character(model_identifier)) %>% 
+  separate(col = mod_label, into = c('mod_label', NA, NA), sep = '_') %>% 
+  mutate(strata_type = case_when(str_detect(model_identifier, 'ejiQ') ~ 'EJI',
+                                 str_detect(model_identifier, 'ice') ~ 'ICE',
+                                 str_detect(model_identifier, 'Ebm') ~ 'EBM',
+                                 str_detect(model_identifier, 'Svm') ~ 'SVM',
+                                 str_detect(model_identifier, 'Hvm') ~ 'HVM'),
+         facet_type = case_when(str_detect(model_identifier, 'ice|ejiQ') ~ 'Main Analyses',
+                                str_detect(model_identifier, 'Ebm|Svm|Hvm') ~ 'EJI Modules'), 
+         mod_label = str_replace(mod_label, 'eji', 'EJI'),
+         mod_label = str_replace(mod_label, 'EJIEbm', 'Env. Burden'),
+         mod_label = str_replace(mod_label, 'EJIHvm', 'Health Vuln.'),
+         mod_label = str_replace(mod_label, 'EJISvm', 'Social Vuln.'),
+         mod_label = str_replace(mod_label, 'Q', ' Q'),
+         mod_label = str_replace(mod_label, 'ice', 'ICE'),
+         mod_label = str_replace(mod_label, 'HhincomeBw', ''),
+         mod_label = factor(mod_label, 
+                            levels = c('ICE Q1', 'ICE Q2', 'ICE Q3', 'ICE Q4', 'ICE Q5',
+                                       'EJI Q1', 'EJI Q2', 'EJI Q3', 'EJI Q4', 'EJI Q5',
+                                       'Env. Burden Q1', 'Env. Burden Q2',
+                                       'Env. Burden Q3',
+                                       'Health Vuln. Q1', 'Health Vuln. Q2',
+                                       'Health Vuln. Q3',
+                                       'Social Vuln. Q1', 'Social Vuln. Q2',
+                                       'Social Vuln. Q3'))) %>% 
+  arrange(mod_label)
+
+# 5b Add an 'order' variable to use for plotting the y axis. This variable will leave
+#    two spaces between each strata on the y axis
+mod_results$order = seq(1,57,by=3)
+
+# 5c Set up color palettes
+forest_plot_color_palette <- c('dodgerblue', 'dodgerblue1', 'dodgerblue2', 'dodgerblue3', 
+                               'dodgerblue4', 'red', 'red1', 'red2', 
+                               'red3', 'red4', 'goldenrod1', 'goldenrod2', 
+                               'goldenrod3', 'darkorange', 'darkorange1', 'darkorange2', 
+                               'orangered', 'orangered2', 'orangered3')
+forest_plot_color_palette2 <- c('goldenrod1', 'goldenrod2', 
+                                'goldenrod3', 'darkorange', 'darkorange1', 'darkorange2', 
+                                'orangered', 'orangered2', 'orangered3')
+
+# 5d Create forest plot of model results for main analyses
+fig4_a <- mod_results %>% 
+  filter(facet_type == 'Main Analyses') %>% 
+  ggplot(aes(x = coef_pause, y = order, xmin = lci_pause, xmax = uci_pause,
+             color = mod_label)) +
+  geom_point() +
+  geom_pointrange() +
+  geom_vline(aes(xintercept = 1), linetype = 'solid') +
+  scale_color_manual(values = forest_plot_color_palette) +
+  xlim(c(1,3.5)) +
+  scale_y_continuous(breaks = mod_results$order, 
+                     labels = mod_results$mod_label,
+                     limits = c(1,29)) +
+  geom_hline(aes(yintercept = 14.5), linetype = 'dashed', color = 'gray60') +
+  annotate('text', x = 1.65, y = 29, label = 'A: Main Analyses', size = 16/.pt) +
+  xlab("Effect Estimate") + ylab("Strata") + 
+  theme_bw() +
+  theme(text = element_text(size = 16),
+        legend.position = 'none')
+fig4_a
+
+# 5e Create forest plot of model results for EJI modules
+fig4_b <- mod_results %>% 
+  filter(facet_type == 'EJI Modules') %>% 
+  ggplot(aes(x = coef_pause, y = order, xmin = lci_pause, xmax = uci_pause,
+             color = mod_label)) +
+  geom_point() +
+  geom_pointrange() +
+  geom_vline(aes(xintercept = 1), linetype = 'solid') +
+  scale_color_manual(values = forest_plot_color_palette2) +
+  xlim(c(1,3.5)) +
+  scale_y_continuous(breaks = mod_results$order, 
+                     labels = mod_results$mod_label,
+                     limits = c(30,56)) +
+  geom_hline(aes(yintercept = 38.5), linetype = 'dashed', color = 'gray60') +
+  geom_hline(aes(yintercept = 47.5), linetype = 'dashed', color = 'gray60') +
+  annotate('text', x = 1.65, y = 56, label = 'A: EJI Modules', size = 16/.pt) +
+  xlab("Effect Estimate") + ylab("Strata") + 
+  theme_bw() +
+  theme(text = element_text(size = 16),
+        legend.position = 'none')
+fig4_b
+
+# 5f Combine and save plot
+tiff(paste0(figure_path, 'fig4_ModResultsPlot.tiff'),
+     units = "in", width = 10, height = 7, res = 300)
+plot_grid(fig4_a, fig4_b, rel_widths = c(1,1))
+dev.off()
 
 
 
