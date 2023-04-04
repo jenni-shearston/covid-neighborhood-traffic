@@ -19,6 +19,17 @@
 # Na Description
 # In this script we 
 
+###### OTHER MODELS TO RUN
+# effect modification by rush hour / not and by daytime / nighttime?
+# secondary analysis of speed reduction factor? not correlated with prop maroon+red
+#   and .5 correlation with prop green
+# sens: removing traffic vars from eji
+# sens: play with knots on tensor term. not sure what range to assess - check w MAK
+# sens: repeat with proportion green+gray
+
+# in discussion of paper
+#  be sure to discuss how pixel count accounts for road class
+
 # May be useful:
 # Resource for adding autocorrelation structure to mixed model with nlme::lme
 # http://bbolker.github.io/mixedmodels-misc/ecostats_chap.html
@@ -203,14 +214,6 @@ for(i in 1:length(fullDataS$strata)){
 tictoc::toc()
 
 
-####*************************
-#### 4: Model Evaluation #### 
-####*************************
-
-
-
-
-
 # Solo model for experimenting
 # ~15 minutes
 tictoc::tic('one model')
@@ -222,16 +225,90 @@ mod <- gamm4::gamm4(prop_green ~ as.factor(pause) + time_elapsed
 tictoc::toc()
 
 
-###### OTHER MODELS TO RUN
-# effect modification by rush hour / not and by daytime / nighttime?
-# if correlation between two traffic vars is less than .9, try running one strata while
-#   i'm writing up the paper to see if it's worth adding as a secondary analysis
-# sens: removing traffic vars from eji
-# sens: play with knots on tensor term. not sure what range to assess - check w MAK
-# sens: repeat with proportion green+gray
+####*************************
+#### 4: Model Evaluation #### 
+####*************************
 
-# in discussion of paper
-#  be sure to discuss how pixel count accounts for road class
+# 4a Initiate function to evaluate model
+model_eval <- function(dataForMod, model, outputPath){
+                       # dataForMod <- fullDataS$data[[i]];
+                       # model <- 'iceHhincomeBwQ2_propGreen_main.rds'
+                       # outputPath <- model_path
+
+  # 4b Load model(s) to evaluate
+  mod <- readr::read_rds(paste0(outputPath, model))
+
+  # 4c Create dataframe for model diagnostics
+  mod_diag <- dataForMod %>% 
+    mutate(fitted = mod$gam$fitted.values,
+           resids = mod$gam$residuals,
+           resids_scaled = scale(resids))
+  
+  # 4d Check heteroscedasticity using resids vs fitted values plot
+  hetero_plot <- mod_diag %>% ggplot(aes(x = fitted, y = resids_scaled)) +
+    geom_point() + geom_hline(yintercept = 0) + xlab("Fitted values") + 
+    ylab("Standardized residuals") + theme_bw()
+  
+  # 4e Check for non-linearity using resids vs explanatory vars plots
+  # 4e.i Year
+  nonLinearity_plot_year <- mod_diag %>% ggplot(aes(x = year, y = resids_scaled)) +
+    geom_point(alpha = 0.25) + geom_hline(yintercept = 0) + xlab("Explanatory Var") + 
+    ylab("Standardized residuals") + theme_bw()
+  # 4e.i Month
+  nonLinearity_plot_month <- mod_diag %>% ggplot(aes(x = month, y = resids_scaled)) +
+    geom_point(alpha = 0.25) + geom_hline(yintercept = 0) + xlab("Explanatory Var") + 
+    ylab("Standardized residuals") + theme_bw()
+  # 4e.i Day of week
+  nonLinearity_plot_dow <- mod_diag %>% ggplot(aes(x = dow, y = resids_scaled)) +
+    geom_point(alpha = 0.25) + geom_hline(yintercept = 0) + xlab("Explanatory Var") + 
+    ylab("Standardized residuals") + theme_bw()
+  
+  # 4f Check that residuals are normally distributed (QQ Plot)
+  qqnorm(mod_diag$resids, pch = 20, col = "black")
+  qqline(mod_diag$resids)
+  norm_plot <- recordPlot()
+  
+  # 4g Check for influential datapoints
+  infl_plot <- mod_diag %>% 
+    ggplot(aes(y = resids_scaled)) +
+    geom_boxplot() + ylab('Standardized Resids')
+  mean_traf <- mean(mod_diag$prop_green)
+  sd_traf <- sd(mod_diag$prop_green)
+  infl_df <- mod_diag %>% filter(resids > (mean_traf+(sd_traf*3)))
+  
+  # 4h Check for autocorrelation
+  acf_plot <- acf(mod_diag$resids)
+  pacf_plot <- pacf(mod_diag$resids)
+  
+  # 4i Check concurvity
+  concurv_df <- concurvity(mod$gam)
+  
+  # 4j Return needed plots
+  return(list(hetero_plot, nonLinearity_plot_year, nonLinearity_plot_month,
+         nonLinearity_plot_dow, norm_plot, infl_plot, infl_df,
+         acf_plot, pacf_plot, concurv_df))
+  
+  # Missing the following, check w MAK if needed:
+  #  - Check that the random effect distribution is normal
+  #  - Check for heteroscedasticity by level of random effects
+
+}
+
+# 4k Evaluate one strata from ICE 
+dataForMod = fullDataS$data[[1]] 
+model = 'iceHhincomeBwQ2_propGreen_main.rds'
+outputPath = model_path
+eval1 <- model_eval(dataForMod, model, outputPath)
+mod_ice <- readr::read_rds(paste0(outputPath, model))
+gam.check(mod_ice$gam)
+
+# 4l Evaluate one strata from EJI
+dataForMod = fullDataS$data[[6]]
+model = 'ejiQ4_propGreen_main.rds' 
+outputPath = model_path
+eval2 <- model_eval(dataForMod, model, outputPath)
+mod_eji <- readr::read_rds(paste0(outputPath, model))
+gam.check(mod_eji$gam)
 
 
 

@@ -1,7 +1,7 @@
 # Merge Traffic, ICE, EJI data
 # F31 Google Traffic COVID ITS Analysis
 # Jenni A. Shearston 
-# Updated 03/16/2023
+# Updated 04/04/2023
 
 ####***********************
 #### Table of Contents #### 
@@ -10,9 +10,11 @@
 # N: Notes
 # 0: Preparation 
 # 1: Merge and Assess Missingness
-# 2: Determine Quantiles for ICE and EJI
-# 3: Add PAUSE Var and Time Covariates
-# 4: Add CT Centroids to Account for Spatial Autocorrelation
+# 2: Aggregate to Daily Temporal Resolution
+# 3: Determine Quantiles for ICE and EJI
+# 4: Add PAUSE Var and Time Covariates
+# 5: Add CT Centroids to Account for Spatial Autocorrelation
+# 6: Review Traffic Time Series
 
 
 ####**************
@@ -324,6 +326,44 @@ traf_eji_ice_daily <- traf_eji_ice_daily %>% dplyr::select(-geometry) %>%
 
 # 5c Save dataset
 traf_eji_ice_daily %>% write_rds(file = paste0(data_path, 'full_dataset_wcovars_daily.rds'))
+
+
+####***********************************
+#### 6: Review Traffic Time Series #### 
+####***********************************
+
+# 6a Review time series of traffic data
+#    Note: From June 22 through Sept 1 2018 percent green is weirdly low
+# 6a.i Proportion green variable
+traf_eji_ice_daily %>% group_by(date) %>% 
+  summarise(mean_prop_green = mean(prop_green, na.rm = T)) %>% 
+  ggplot(aes(x = date, y = mean_prop_green)) +
+  geom_line() 
+# 6a.ii Same is true for green pixel counts
+traf_eji_ice_daily %>% group_by(date) %>% 
+  summarise(mean_gt_pixcount_green = mean(gt_pixcount_green, na.rm = T)) %>% 
+  ggplot(aes(x = date, y = mean_gt_pixcount_green)) +
+  geom_line() 
+# 6a.iii Percent maroon+red also dips but less so, and pandemic effect more apparent
+traf_eji_ice_daily %>% group_by(date) %>% 
+  summarise(mean_prop_maroon_red = mean(prop_maroon_red, na.rm = T)) %>% 
+  ggplot(aes(x = date, y = mean_prop_maroon_red)) +
+  geom_line() 
+# 6a.iv Also seen in speed reduction factor, also more apparent pandemic effect
+traf_eji_ice_daily %>% group_by(date) %>% 
+  summarise(mean_speed_reduct_fact = mean(speed_reduct_fact, na.rm = T)) %>% 
+  ggplot(aes(x = date, y = mean_speed_reduct_fact)) +
+  geom_line() 
+# 6a.v Decrease also seen for orange pixcount
+traf_eji_ice_daily %>% group_by(date) %>% 
+  summarise(mean_gt_pixcount_orange = mean(gt_pixcount_orange, na.rm = T)) %>% 
+  ggplot(aes(x = date, y = mean_gt_pixcount_orange)) +
+  geom_line() 
+# 6a.vi Also present in hourly dataset
+traf %>% group_by(captured_datetime) %>% 
+  summarise(mean_gt_pixcount_orange = mean(gt_pixcount_orange, na.rm = T)) %>% 
+  ggplot(aes(x = captured_datetime, y = mean_gt_pixcount_orange)) +
+  geom_line() 
 
 
 
