@@ -176,10 +176,10 @@ traf_eji_ice_daily <- traf_eji_ice_daily %>%
 #               ((1,096 possible dates - 74 dates missing all 24 hours) 
 #               * 445 CTs) + 74 dates missing all 24 hours
 #           n = 74 dates are missing images for all 24 hours
-#           n = 217,565 datetime-CT obs are missing EJI data, corresponding 
+#           n = 9,272 datetime-CT obs are missing EJI data, corresponding 
 #               to the 8 missing CTs assessed 1_05 and an additional CT missing, 
 #               36061029700, Inwood Hill Park
-#           n = 193,657 datetime-CTs are missing ICE census data, corresponding
+#           n = 8,250 datetime-CTs are missing ICE census data, corresponding
 #               to the 8 missing CTs assessed in 1_04
 table(traf_eji_ice_daily$no_image, useNA = 'always')
 summary(traf_eji_ice_daily)
@@ -283,8 +283,8 @@ table(traf_eji_ice_daily$eji_hvm_3, useNA = 'always')
 # 4a Add PAUSE variable and time covariates
 traf_eji_ice_daily <- traf_eji_ice_daily %>% 
   mutate(
-    pause = factor(ifelse(date > '2020-03-22', 'pause', 'pre-pause'),
-                   levels = c('pre-pause', 'pause')),
+    pause = ifelse(date > '2020-03-22' & date < '2020-06-08', 1, 0),
+    pause_end = ifelse(date < '2020-06-08', 0, 1),
     dow = factor(wday(date, label = T)),
     month = factor(month(date)),
     year = factor(year(date))
@@ -292,6 +292,7 @@ traf_eji_ice_daily <- traf_eji_ice_daily %>%
 
 # 4b Review new vars
 table(traf_eji_ice_daily$pause, useNA = 'always')
+table(traf_eji_ice_daily$pause_end, useNA = 'always')
 table(traf_eji_ice_daily$dow, useNA = 'always')
 table(traf_eji_ice_daily$month, useNA = 'always')
 table(traf_eji_ice_daily$year, useNA = 'always')
