@@ -60,51 +60,53 @@ fullData <- read_rds(paste0(data_path, 'full_dataset_wcovars_daily.rds'))
 #### 1: Split, Filter & Nest Dataset #### 
 ####*************************************
 
-# 1a Filter dataset to exclude Phase 1 reopening and beyond
-#    Note: NYC entered Phase 1 reopening on June 8, 2020
-fullDataF <- fullData %>% filter(date < '2020-06-08')
-
-# 1b Nest by strata
-# 1b.i ICE HH Income and BW Race, 5 quantiles
-fullDataS <- fullDataF %>% group_by(ice_hhincome_bw_5) %>% nest() %>% 
+# 1a Nest by strata
+# 1a.i ICE HH Income and BW Race, 5 quantiles
+fullDataS <- fullData %>% group_by(ice_hhincome_bw_5) %>% nest() %>% 
   rename(strata = ice_hhincome_bw_5) %>% 
   mutate(strata = case_when(
     strata == 'Q1' ~ 'iceHhincomeBwQ1', strata == 'Q2' ~ 'iceHhincomeBwQ2',
     strata == 'Q3' ~ 'iceHhincomeBwQ3', strata == 'Q4' ~ 'iceHhincomeBwQ4',
     strata == 'Q5' ~ 'iceHhincomeBwQ5'))
-# 1b.ii EJI, 5 quantiles
-fullDataS.2 <- fullDataF %>% group_by(eji_5) %>% nest() %>% 
+# 1a.ii EJI, 5 quantiles
+fullDataS.2 <- fullData %>% group_by(eji_5) %>% nest() %>% 
   rename(strata = eji_5) %>% 
   mutate(strata = case_when(
     strata == 'Q1' ~ 'ejiQ1', strata == 'Q2' ~ 'ejiQ2',
     strata == 'Q3' ~ 'ejiQ3', strata == 'Q4' ~ 'ejiQ4',
     strata == 'Q5' ~ 'ejiQ5'))
-# 1b.iii EJI EBM Module, 3 quantiles
-fullDataS.3 <- fullDataF %>% group_by(eji_ebm_3) %>% nest() %>% 
+# 1a.iii EJI EBM Module, 3 quantiles
+fullDataS.3 <- fullData %>% group_by(eji_ebm_3) %>% nest() %>% 
   rename(strata = eji_ebm_3) %>% 
   mutate(strata = case_when(
     strata == 'Q1' ~ 'ejiEbmQ1', strata == 'Q2' ~ 'ejiEbmQ2', 
     strata == 'Q3' ~ 'ejiEbmQ3'))
-# 1b.iv EJI SVM Module, 3 quantiles
-fullDataS.4 <- fullDataF %>% group_by(eji_svm_3) %>% nest() %>% 
+# 1a.iv EJI SVM Module, 3 quantiles
+fullDataS.4 <- fullData %>% group_by(eji_svm_3) %>% nest() %>% 
   rename(strata = eji_svm_3) %>% 
   mutate(strata = case_when(
     strata == 'Q1' ~ 'ejiSvmQ1', strata == 'Q2' ~ 'ejiSvmQ2', 
     strata == 'Q3' ~ 'ejiSvmQ3'))
-# 1b.v EJI HVM Module, 3 quantiles
-fullDataS.5 <- fullDataF %>% group_by(eji_hvm_3) %>% nest() %>% 
+# 1a.v EJI HVM Module, 3 quantiles
+fullDataS.5 <- fullData %>% group_by(eji_hvm_3) %>% nest() %>% 
   rename(strata = eji_hvm_3) %>% 
   mutate(strata = case_when(
     strata == 'Q1' ~ 'ejiHvmQ1', strata == 'Q2' ~ 'ejiHvmQ2', 
     strata == 'Q3' ~ 'ejiHvmQ3'))
 
-# 1c Bind together
+# 1b Bind together
 fullDataS <- fullDataS %>% 
   bind_rows(fullDataS.2, fullDataS.3, fullDataS.4, fullDataS.5) %>% 
   filter(!is.na(strata))
 
+# 1c Create filtered dataset to exclude Phase 1 reopening and beyond for models
+#    that follow ITS impact model A
+#    Note: NYC entered Phase 1 reopening on June 8, 2020
+fullDataFS <- fullDataS %>% 
+  mutate(data = map(data, ~ filter(., date < '2020-06-08')))
+
 # 1d Clean environment
-rm(fullData, fullDataF, fullDataS.2, fullDataS.3, fullDataS.4, fullDataS.5)
+rm(fullData, fullDataS.2, fullDataS.3, fullDataS.4, fullDataS.5)
 
 
 ####****************************************************
@@ -128,10 +130,29 @@ analyze_trafPause <- function(strata, dataForMod, outcome, analysis, outputPath)
   #             We estimate 8 knots for lat b/c study area is ~ 8 mi
   #             We estimate 4 knots for lon b/c study area is ~ 4 mi
   
-      # 2c.i Outcome == propGreen
-      if (str_detect(outcome, 'propGreen')){
+      # 2c.i Outcome == propGreen & Analysis == main
+      if (str_detect(outcome, 'propGreen') & str_detect(analysis, 'main')){
         
-        mod <- gamm4::gamm4(prop_green ~ as.factor(pause) + time_elapsed 
+        mod <- gamm4::gamm4(prop_green ~ pause + time_elapsed 
+                            + as.factor(year) + as.factor(month) + as.factor(dow) 
+                            + t2(lat, lon, k = c(8, 4), bs = 'cr'),
+                            random = ~(1|poly_id), family = gaussian(), 
+                            data = dataForMod)}
+  
+      # 2c.ii Outcome == propMaroonRed & Analysis == main
+      if (str_detect(outcome, 'propMaroonRed') & str_detect(analysis, 'main')){
+    
+        mod <- gamm4::gamm4(prop_maroon_red ~ pause + time_elapsed 
+                            + as.factor(year) + as.factor(month) + as.factor(dow) 
+                            + t2(lat, lon, k = c(8, 4), bs = 'cr'),
+                            random = ~(1|poly_id), family = gaussian(), 
+                            data = dataForMod)}
+  
+      # 2c.iii Outcome == propMaroonRed & Analysis == includeRecovery
+      if (str_detect(outcome, 'propMaroonRed') & str_detect(analysis, 'includeRecovery')){
+        
+        mod <- gamm4::gamm4(prop_maroon_red ~ pause + pause_end
+                            + time_elapsed 
                             + as.factor(year) + as.factor(month) + as.factor(dow) 
                             + t2(lat, lon, k = c(8, 4), bs = 'cr'),
                             random = ~(1|poly_id), family = gaussian(), 
@@ -146,12 +167,27 @@ analyze_trafPause <- function(strata, dataForMod, outcome, analysis, outputPath)
   
   # 2f Read in model results table
   modTable <- read_csv(paste0(outputPath, 'model_results_table.csv'), 
-                       col_types = c('c', 'i', 'n', 'n', 'n', 'T'))
+                       col_types = c('c', 'i', 'n', 'n', 'n', 'n', 'n', 'n', 'T'))
   
   # 2g Add this iteration's model results to the set of model results
-  modTable[1 + nrow(modTable),] <- list(modelIdentifier, model_n$n,
-                                        tidy_mod$estimate[2], tidy_mod$conf.low[2], tidy_mod$conf.high[2],
-                                        Sys.time())
+  
+      # 2g.i Analysis == main
+      if (str_detect(analysis, 'main')){
+        
+        modTable[1 + nrow(modTable),] <- list(modelIdentifier, model_n$n,
+                                        tidy_mod$estimate[2], tidy_mod$conf.low[2], 
+                                        tidy_mod$conf.high[2], NA, NA, NA,
+                                        Sys.time())}
+      
+      # 2g.ii Analysis == includeRecovery
+      if (str_detect(analysis, 'includeRecovery')){
+        
+        modTable[1 + nrow(modTable),] <- list(modelIdentifier, model_n$n,
+                                              tidy_mod$estimate[2], tidy_mod$conf.low[2], 
+                                              tidy_mod$conf.high[2],
+                                              tidy_mod$estimate[3], tidy_mod$conf.low[3],
+                                              tidy_mod$conf.high[3],
+                                              Sys.time())}
   
   # 2h Remove old models and save
   #    Note: The slice step keeps only the earliest model results for each 
@@ -170,7 +206,7 @@ analyze_trafPause <- function(strata, dataForMod, outcome, analysis, outputPath)
 #### 3: Run Models #### 
 ####*******************
 
-# 3a Set up parallelization
+# 3a Set up parallelization (if using)
 # 3a.i Get number of cores
 #      Note: We subtract 2 cores to reserve for other tasks
 n.cores <- parallel::detectCores() - 2
@@ -181,11 +217,12 @@ my.cluster <- parallel::makeCluster(
 # 3a.iii Register cluster to be used by %dopar%
 doParallel::registerDoParallel(cl = my.cluster)
 
-# 3b Run models for prop_green outcome
+# 3b Run models for prop_maroon_red outcome
 #    Note: Run in parallel, 19 strata take ~ 4.3 hrs
 #          When running in parallel the 'slice' step in 2h where old models are 
 #          removed from the modTable does not work correctly
 #          b/c each core does the step independently (although the table is saved)
+
 # 3b.i Parallel option 
 tictoc::tic('Run 19 strata in parallel')
 mod_results <- 
@@ -194,22 +231,27 @@ mod_results <-
     .combine = 'rbind'
   ) %dopar% {
     analyze_trafPause(strata = fullDataS$strata[[i]], dataForMod = fullDataS$data[[i]], 
-                      outcome = 'propGreen', analysis = 'main', outputPath = model_path)}
+                      outcome = 'propMaroonRed', analysis = 'main', outputPath = model_path)}
 stopCluster(my.cluster)
 tictoc::toc()
+# 3b.i.1 Remove old models and re-save
+#        When running in parallel the 'slice' step in 2h where old models are 
+#        removed from the modTable does not work correctly
+#        b/c each core does the step independently (although the table is saved)
 mod_results <- mod_results %>% 
   group_by(model_identifier) %>% 
   arrange(desc(run_date)) %>% 
   slice(0:1) %>% 
   filter(!is.na(model_identifier)) %>% 
   write_csv(paste0(model_path, 'model_results_table.csv'))
+
 # 3b.ii For loop option 
 #    Note: One model takes ~ 15 min, two models take ~ 32 min
 tictoc::tic('Run X strata in for loop')
 for(i in 1:length(fullDataS$strata)){
   analyze_trafPause(strata = fullDataS$strata[[i]], dataForMod = fullDataS$data[[i]], 
-                    outcome = 'propGreen', analysis = 'main', outputPath = model_path)
-  print(fullData$strata[[i]])
+                    outcome = 'propMaroonRed', analysis = 'includeRecovery', outputPath = model_path)
+  print(fullDataS$strata[[i]])
 }
 tictoc::toc()
 
@@ -217,7 +259,7 @@ tictoc::toc()
 # Solo model for experimenting
 # ~15 minutes
 tictoc::tic('one model')
-mod <- gamm4::gamm4(prop_green ~ as.factor(pause) + time_elapsed 
+mod <- gamm4::gamm4(prop_maroon_red ~ pause + pause_end + time_elapsed 
                     + as.factor(year) + as.factor(month) + as.factor(dow) 
                     + t2(lat, lon, k = c(8, 4), bs = 'cr'),
                     random = ~(1|poly_id), family = gaussian(), 
