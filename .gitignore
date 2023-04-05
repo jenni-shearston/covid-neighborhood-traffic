@@ -29,7 +29,44 @@ outputs/models/ejiSvmQ3_propGreen_main.rds
 outputs/models/ejiHvmQ1_propGreen_main.rds
 outputs/models/ejiHvmQ2_propGreen_main.rds
 outputs/models/ejiHvmQ3_propGreen_main.rds
-
+outputs/models/iceHhincomeBwQ1_propMaroonRed_main.rds
+outputs/models/iceHhincomeBwQ2_propMaroonRed_main.rds
+outputs/models/iceHhincomeBwQ3_propMaroonRed_main.rds
+outputs/models/iceHhincomeBwQ4_propMaroonRed_main.rds
+outputs/models/iceHhincomeBwQ5_propMaroonRed_main.rds
+outputs/models/ejiQ1_propMaroonRed_main.rds
+outputs/models/ejiQ2_propMaroonRed_main.rds
+outputs/models/ejiQ3_propMaroonRed_main.rds
+outputs/models/ejiQ4_propMaroonRed_main.rds
+outputs/models/ejiQ5_propMaroonRed_main.rds
+outputs/models/ejiEbmQ1_propMaroonRed_main.rds
+outputs/models/ejiEbmQ2_propMaroonRed_main.rds
+outputs/models/ejiEbmQ3_propMaroonRed_main.rds
+outputs/models/ejiSvmQ1_propMaroonRed_main.rds
+outputs/models/ejiSvmQ2_propMaroonRed_main.rds
+outputs/models/ejiSvmQ3_propMaroonRed_main.rds
+outputs/models/ejiHvmQ1_propMaroonRed_main.rds
+outputs/models/ejiHvmQ2_propMaroonRed_main.rds
+outputs/models/ejiHvmQ3_propMaroonRed_main.rds
+outputs/models/iceHhincomeBwQ1_propMaroonRed_includeRecovery.rds
+outputs/models/iceHhincomeBwQ2_propMaroonRed_includeRecovery.rds
+outputs/models/iceHhincomeBwQ3_propMaroonRed_includeRecovery.rds
+outputs/models/iceHhincomeBwQ4_propMaroonRed_includeRecovery.rds
+outputs/models/iceHhincomeBwQ5_propMaroonRed_includeRecovery.rds
+outputs/models/ejiQ1_propMaroonRed_includeRecovery.rds
+outputs/models/ejiQ2_propMaroonRed_includeRecovery.rds
+outputs/models/ejiQ3_propMaroonRed_includeRecovery.rds
+outputs/models/ejiQ4_propMaroonRed_includeRecovery.rds
+outputs/models/ejiQ5_propMaroonRed_includeRecovery.rds
+outputs/models/ejiEbmQ1_propMaroonRed_includeRecovery.rds
+outputs/models/ejiEbmQ2_propMaroonRed_includeRecovery.rds
+outputs/models/ejiEbmQ3_propMaroonRed_includeRecovery.rds
+outputs/models/ejiSvmQ1_propMaroonRed_includeRecovery.rds
+outputs/models/ejiSvmQ2_propMaroonRed_includeRecovery.rds
+outputs/models/ejiSvmQ3_propMaroonRed_includeRecovery.rds
+outputs/models/ejiHvmQ1_propMaroonRed_includeRecovery.rds
+outputs/models/ejiHvmQ2_propMaroonRed_includeRecovery.rds
+outputs/models/ejiHvmQ3_propMaroonRed_includeRecovery.rds
 
 
 

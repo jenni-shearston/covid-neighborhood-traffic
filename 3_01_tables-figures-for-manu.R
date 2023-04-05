@@ -56,19 +56,17 @@ mod_results <- read_csv(paste0(model_path, 'model_results_table.csv'))
 #### 1: Prepare Descriptive Table for EJI/ICE Strata CTs #### 
 ####*********************************************************
 
-# 1a Filter dataset to exclude Phase 1 reopening and beyond
-#    Note: NYC entered Phase 1 reopening on June 8, 2020
-fullDataF <- fullData %>% filter(date < '2020-06-08')
+## ADD FILTER STATEMENT DEPENDING ON WHAT 'MAIN' MODEL IS
 
-# 1b Nest by strata
-# 1b.i ICE HH Income and BW Race, 5 quantiles
+# 1a Nest by strata
+# 1a.i ICE HH Income and BW Race, 5 quantiles
 fullDataS <- fullDataF %>% group_by(ice_hhincome_bw_5) %>% nest() %>% 
   rename(strata = ice_hhincome_bw_5) %>% 
   mutate(strata = case_when(
     strata == 'Q1' ~ 'iceHhincomeBwQ1', strata == 'Q2' ~ 'iceHhincomeBwQ2',
     strata == 'Q3' ~ 'iceHhincomeBwQ3', strata == 'Q4' ~ 'iceHhincomeBwQ4',
     strata == 'Q5' ~ 'iceHhincomeBwQ5'))
-# 1b.ii EJI, 5 quantiles
+# 1a.ii EJI, 5 quantiles
 fullDataS.2 <- fullDataF %>% group_by(eji_5) %>% nest() %>% 
   rename(strata = eji_5) %>% 
   mutate(strata = case_when(
@@ -76,12 +74,12 @@ fullDataS.2 <- fullDataF %>% group_by(eji_5) %>% nest() %>%
     strata == 'Q3' ~ 'ejiQ3', strata == 'Q4' ~ 'ejiQ4',
     strata == 'Q5' ~ 'ejiQ5'))
 
-# 1c Bind together
+# 1b Bind together
 fullDataS <- fullDataS %>% 
   bind_rows(fullDataS.2) %>% 
   filter(!is.na(strata))
 
-# 1d Set strata to factor with assigned levels
+# 1c Set strata to factor with assigned levels
 fullDataS <- fullDataS %>% 
   mutate(strata = factor(strata, levels = c('iceHhincomeBwQ1', 'iceHhincomeBwQ2',
                                             'iceHhincomeBwQ3', 'iceHhincomeBwQ4',
@@ -293,6 +291,8 @@ dev.off()
 
 # 5a Clean strata names for plotting
 mod_results <- mod_results %>% 
+  filter(str_detect(model_identifier, 'includeRecovery')) %>% 
+  filter(str_detect(model_identifier, 'propMaroonRed')) %>% 
   mutate(mod_label = as.character(model_identifier)) %>% 
   separate(col = mod_label, into = c('mod_label', NA, NA), sep = '_') %>% 
   mutate(strata_type = case_when(str_detect(model_identifier, 'ejiQ') ~ 'EJI',
@@ -324,61 +324,70 @@ mod_results <- mod_results %>%
 #    two spaces between each strata on the y axis
 mod_results$order = seq(1,57,by=3)
 
-# 5c Set up color palettes
-forest_plot_color_palette <- c('dodgerblue', 'dodgerblue1', 'dodgerblue2', 'dodgerblue3', 
-                               'dodgerblue4', 'red', 'red1', 'red2', 
-                               'red3', 'red4', 'goldenrod1', 'goldenrod2', 
-                               'goldenrod3', 'darkorange', 'darkorange1', 'darkorange2', 
-                               'orangered', 'orangered2', 'orangered3')
+# 5c Pivot so we can plot both coefficients 
+mod_results <- mod_results %>%  
+  pivot_longer(cols = coef_pause:uci_pauseEnd, names_sep = '_',
+               names_to = c('limit', 'names')) %>% 
+  pivot_wider(names_from = limit, values_from = value, names_repair = 'check_unique') 
+
+# 5d Set up color palettes
+# forest_plot_color_palette <- c('dodgerblue', 'dodgerblue', 'dodgerblue1', 'dodgerblue1', 
+#                                'dodgerblue2', 'dodgerblue2', 'dodgerblue3', 'dodgerblue3',
+#                                'dodgerblue4', 'dodgerblue4', 'red', 'red', 'red1', 'red1',  
+#                                'red2', 'red2', 'red3', 'red3', 'red4', 'red4')
+forest_plot_color_palette <- c('dodgerblue', 'dodgerblue1', 
+                               'dodgerblue2', 'dodgerblue3',
+                               'dodgerblue4', 'red', 'red1',
+                               'red2', 'red3', 'red4')
 forest_plot_color_palette2 <- c('goldenrod1', 'goldenrod2', 
                                 'goldenrod3', 'darkorange', 'darkorange1', 'darkorange2', 
                                 'orangered', 'orangered2', 'orangered3')
 
-# 5d Create forest plot of model results for main analyses
+# 5e Create forest plot of model results for main analyses
 fig4_a <- mod_results %>% 
-  filter(facet_type == 'Main Analyses') %>% 
-  ggplot(aes(x = coef_pause, y = order, xmin = lci_pause, xmax = uci_pause,
-             color = mod_label)) +
+  filter(facet_type == 'Main Analyses') %>%
+  ggplot(aes(x = coef, y = order, xmin = lci, xmax = uci,
+             color = mod_label, shape = names)) +
   geom_point() +
   geom_pointrange() +
-  geom_vline(aes(xintercept = 1), linetype = 'solid') +
+  geom_vline(aes(xintercept = 0), linetype = 'solid') +
   scale_color_manual(values = forest_plot_color_palette) +
-  xlim(c(1,3.5)) +
+  xlim(c(-8,1)) +
   scale_y_continuous(breaks = mod_results$order, 
                      labels = mod_results$mod_label,
-                     limits = c(1,29)) +
-  geom_hline(aes(yintercept = 14.5), linetype = 'dashed', color = 'gray60') +
-  annotate('text', x = 1.65, y = 29, label = 'A: Main Analyses', size = 16/.pt) +
+                     limits = c(1,56)) +
+  geom_hline(aes(yintercept = 28.5), linetype = 'dashed', color = 'gray60') +
+  annotate('text', x = -6, y = 56, label = 'A: Main Analyses', size = 16/.pt) +
   xlab("Effect Estimate") + ylab("Strata") + 
   theme_bw() +
   theme(text = element_text(size = 16),
         legend.position = 'none')
 fig4_a
 
-# 5e Create forest plot of model results for EJI modules
+# 5f Create forest plot of model results for EJI modules
 fig4_b <- mod_results %>% 
   filter(facet_type == 'EJI Modules') %>% 
   ggplot(aes(x = coef_pause, y = order, xmin = lci_pause, xmax = uci_pause,
              color = mod_label)) +
   geom_point() +
   geom_pointrange() +
-  geom_vline(aes(xintercept = 1), linetype = 'solid') +
+  geom_vline(aes(xintercept = 0), linetype = 'solid') +
   scale_color_manual(values = forest_plot_color_palette2) +
-  xlim(c(1,3.5)) +
+  xlim(c(-8,1)) +
   scale_y_continuous(breaks = mod_results$order, 
                      labels = mod_results$mod_label,
                      limits = c(30,56)) +
   geom_hline(aes(yintercept = 38.5), linetype = 'dashed', color = 'gray60') +
   geom_hline(aes(yintercept = 47.5), linetype = 'dashed', color = 'gray60') +
-  annotate('text', x = 1.65, y = 56, label = 'A: EJI Modules', size = 16/.pt) +
+  annotate('text', x = -6, y = 56, label = 'A: EJI Modules', size = 16/.pt) +
   xlab("Effect Estimate") + ylab("Strata") + 
   theme_bw() +
   theme(text = element_text(size = 16),
         legend.position = 'none')
 fig4_b
 
-# 5f Combine and save plot
-tiff(paste0(figure_path, 'fig4_ModResultsPlot.tiff'),
+# 5g Combine and save plot
+tiff(paste0(figure_path, 'fig4_ModResultsPlot_propMaroonRed.tiff'),
      units = "in", width = 10, height = 7, res = 300)
 plot_grid(fig4_a, fig4_b, rel_widths = c(1,1))
 dev.off()
