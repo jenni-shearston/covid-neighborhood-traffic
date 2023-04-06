@@ -231,7 +231,7 @@ mod_results <-
     .combine = 'rbind'
   ) %dopar% {
     analyze_trafPause(strata = fullDataS$strata[[i]], dataForMod = fullDataS$data[[i]], 
-                      outcome = 'propMaroonRed', analysis = 'main', outputPath = model_path)}
+                      outcome = 'propMaroonRed', analysis = 'includeRecovery', outputPath = model_path)}
 stopCluster(my.cluster)
 tictoc::toc()
 # 3b.i.1 Remove old models and re-save
@@ -270,6 +270,8 @@ tictoc::toc()
 ####*************************
 #### 4: Model Evaluation #### 
 ####*************************
+
+# Notes: Great QQ Plots resource: https://towardsdatascience.com/q-q-plots-explained-5aa8495426c0
 
 # 4a Initiate function to evaluate model
 model_eval <- function(dataForMod, model, outputPath){
@@ -314,8 +316,8 @@ model_eval <- function(dataForMod, model, outputPath){
   infl_plot <- mod_diag %>% 
     ggplot(aes(y = resids_scaled)) +
     geom_boxplot() + ylab('Standardized Resids')
-  mean_traf <- mean(mod_diag$prop_green)
-  sd_traf <- sd(mod_diag$prop_green)
+  mean_traf <- mean(mod_diag$prop_maroon_red)
+  sd_traf <- sd(mod_diag$prop_maroon_red)
   infl_df <- mod_diag %>% filter(resids > (mean_traf+(sd_traf*3)))
   
   # 4h Check for autocorrelation
@@ -337,21 +339,34 @@ model_eval <- function(dataForMod, model, outputPath){
 }
 
 # 4k Evaluate one strata from ICE 
+#    Notes: error variances unequal (fanned to right for fits vs st.resids plot)
+#           not quite normal; distribution peaked in middle (from QQ plot)
+#           acf of about .5 and lower, pacf ok
+#           9 outliers greater than 3 SD from mean, no clear pattern although most in Nov
+#           concurvity present (non-parametric version of multicollinearity), prob
+#             from time vars, might inflate std. errors
 dataForMod = fullDataS$data[[1]] 
-model = 'iceHhincomeBwQ2_propGreen_main.rds'
+model = 'iceHhincomeBwQ1_propMaroonRed_includeRecovery.rds'
 outputPath = model_path
 eval1 <- model_eval(dataForMod, model, outputPath)
 mod_ice <- readr::read_rds(paste0(outputPath, model))
 gam.check(mod_ice$gam)
+mod_ice$mer
 
 # 4l Evaluate one strata from EJI
+#    Notes: error variances unequal (fanned to right for fits vs st.resids plot)
+#           not quite normal; distribution peaked in middle (from QQ plot)
+#           1 outlier greater than 3 SD from mean
+#           pacf ok, acf of .64 at lag 1, .49 at lag 2, and then lower 
+#           concurvity present (non-parametric version of multicollinearity), prob
+#             from time vars, might inflate std. errors
 dataForMod = fullDataS$data[[6]]
-model = 'ejiQ4_propGreen_main.rds' 
+model = 'ejiQ1_propMaroonRed_includeRecovery.rds' 
 outputPath = model_path
 eval2 <- model_eval(dataForMod, model, outputPath)
 mod_eji <- readr::read_rds(paste0(outputPath, model))
 gam.check(mod_eji$gam)
-
+mod_eji$mer
 
 
 

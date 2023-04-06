@@ -355,9 +355,9 @@ fig4_a <- mod_results %>%
   xlim(c(-8,1)) +
   scale_y_continuous(breaks = mod_results$order, 
                      labels = mod_results$mod_label,
-                     limits = c(1,56)) +
-  geom_hline(aes(yintercept = 28.5), linetype = 'dashed', color = 'gray60') +
-  annotate('text', x = -6, y = 56, label = 'A: Main Analyses', size = 16/.pt) +
+                     limits = c(1,29)) +
+  geom_hline(aes(yintercept = 14.5), linetype = 'dashed', color = 'gray60') +
+  annotate('text', x = -6, y = 29, label = 'A: Main Analyses', size = 16/.pt) +
   xlab("Effect Estimate") + ylab("Strata") + 
   theme_bw() +
   theme(text = element_text(size = 16),
@@ -367,8 +367,8 @@ fig4_a
 # 5f Create forest plot of model results for EJI modules
 fig4_b <- mod_results %>% 
   filter(facet_type == 'EJI Modules') %>% 
-  ggplot(aes(x = coef_pause, y = order, xmin = lci_pause, xmax = uci_pause,
-             color = mod_label)) +
+  ggplot(aes(x = coef, y = order, xmin = lci, xmax = uci,
+             color = mod_label, shape = names)) +
   geom_point() +
   geom_pointrange() +
   geom_vline(aes(xintercept = 0), linetype = 'solid') +
@@ -379,7 +379,7 @@ fig4_b <- mod_results %>%
                      limits = c(30,56)) +
   geom_hline(aes(yintercept = 38.5), linetype = 'dashed', color = 'gray60') +
   geom_hline(aes(yintercept = 47.5), linetype = 'dashed', color = 'gray60') +
-  annotate('text', x = -6, y = 56, label = 'A: EJI Modules', size = 16/.pt) +
+  annotate('text', x = -6, y = 56, label = 'B: EJI Modules', size = 16/.pt) +
   xlab("Effect Estimate") + ylab("Strata") + 
   theme_bw() +
   theme(text = element_text(size = 16),
@@ -387,7 +387,7 @@ fig4_b <- mod_results %>%
 fig4_b
 
 # 5g Combine and save plot
-tiff(paste0(figure_path, 'fig4_ModResultsPlot_propMaroonRed.tiff'),
+tiff(paste0(figure_path, 'fig4_ModResultsPlot_propMaroonRed_includeRecovery.tiff'),
      units = "in", width = 10, height = 7, res = 300)
 plot_grid(fig4_a, fig4_b, rel_widths = c(1,1))
 dev.off()
