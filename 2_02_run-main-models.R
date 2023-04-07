@@ -20,12 +20,20 @@
 # In this script we 
 
 ###### OTHER MODELS TO RUN
-# effect modification by rush hour / not and by daytime / nighttime?
-# secondary analysis of speed reduction factor? not correlated with prop maroon+red
-#   and .5 correlation with prop green
+# secondary: effect modification by rush hour / not
+
+# sens: if MH doesn't know whats up with the wierd traffic period, remove that 
+# sens: adjust each module by continuous value of the other two modules (this 
+#       might be what we should do in the main analysis)
 # sens: removing traffic vars from eji
 # sens: play with knots on tensor term. not sure what range to assess - check w MAK
-# sens: repeat with proportion green+gray
+#       4 and 2 (one knot per 2 miles)
+#       11 and 5
+#       16 and 8 (one knot per .5 miles) [do this for one strata]
+#       want to check for stability, but realizing that the few knots we have the 
+#       more we allow for confoudning and autocorellation, but the more knots we 
+#       have the more we are explaining away the effect of pause. so we want to
+#       see how much the results change
 
 # in discussion of paper
 #  be sure to discuss how pixel count accounts for road class
@@ -331,22 +339,23 @@ model_eval <- function(dataForMod, model, outputPath){
   return(list(hetero_plot, nonLinearity_plot_year, nonLinearity_plot_month,
          nonLinearity_plot_dow, norm_plot, infl_plot, infl_df,
          acf_plot, pacf_plot, concurv_df))
-  
-  # Missing the following, check w MAK if needed:
-  #  - Check that the random effect distribution is normal
-  #  - Check for heteroscedasticity by level of random effects
-
 }
 
 # 4k Evaluate one strata from ICE 
-#    Notes: error variances unequal (fanned to right for fits vs st.resids plot)
+#    Notes: error variances a bit unequal (fanned to right for fits vs st.resids plot),
+#             but not outrageous, just ok
 #           not quite normal; distribution peaked in middle (from QQ plot)
-#           acf of about .5 and lower, pacf ok
-#           9 outliers greater than 3 SD from mean, no clear pattern although most in Nov
+#             considered logging outcome, but the decrease in interpretibility not
+#             worth it
+#           acf of about .5 and lower, pacf ok; good enough
+#           9 outliers greater than 3 SD from mean, no clear pattern although most in Nov,
+#             and within expected range. doubt these are influential 
 #           concurvity present (non-parametric version of multicollinearity), prob
-#             from time vars, might inflate std. errors
+#             from time vars correlating with our intervention (e.g., pause only
+#             occurred in 2020 in a couple months), this can inflate std. errors 
+#             but our std. errors are super small so not concerning here
 dataForMod = fullDataS$data[[1]] 
-model = 'iceHhincomeBwQ1_propMaroonRed_includeRecovery.rds'
+model = 'iceHhincomeBwQ2_propMaroonRed_includeRecovery.rds'
 outputPath = model_path
 eval1 <- model_eval(dataForMod, model, outputPath)
 mod_ice <- readr::read_rds(paste0(outputPath, model))
@@ -354,12 +363,18 @@ gam.check(mod_ice$gam)
 mod_ice$mer
 
 # 4l Evaluate one strata from EJI
-#    Notes: error variances unequal (fanned to right for fits vs st.resids plot)
+#    Notes: error variances a bit unequal (fanned to right for fits vs st.resids plot),
+#             but not outrageous, just ok
 #           not quite normal; distribution peaked in middle (from QQ plot)
-#           1 outlier greater than 3 SD from mean
-#           pacf ok, acf of .64 at lag 1, .49 at lag 2, and then lower 
+#             considered logging outcome, but the decrease in interpretibility not
+#             worth it
+#           1 outlier greater than 3 SD from mean, within expected range, prob.
+#             not influential
+#           pacf ok, acf of .64 at lag 1, .49 at lag 2, and then lower --> ok with this
 #           concurvity present (non-parametric version of multicollinearity), prob
-#             from time vars, might inflate std. errors
+#             from time vars correlating with our intervention (e.g., pause only
+#             occurred in 2020 in a couple months), this can inflate std. errors 
+#             but our std. errors are super small so not concerning here
 dataForMod = fullDataS$data[[6]]
 model = 'ejiQ1_propMaroonRed_includeRecovery.rds' 
 outputPath = model_path
@@ -367,6 +382,7 @@ eval2 <- model_eval(dataForMod, model, outputPath)
 mod_eji <- readr::read_rds(paste0(outputPath, model))
 gam.check(mod_eji$gam)
 mod_eji$mer
+
 
 
 

@@ -259,7 +259,11 @@ eji_nyc %>% filter(geoid %in% gt_fips) %>%
 #        tracts in the South Bronx have the highest env burden scores.
 #        When using the modified EJI for NYC, the min decreases to 0.0005
 
-# 3e Count CTs missing EJI values
+# 3e Determine correlation between EJI modules
+eji_cors <- eji_nyc %>% dplyr::select(rpl_ebm, rpl_svm, rpl_hvm)
+eji_cors1 <- cor(eji_cors, method = c('spearman'), use = 'complete.obs')
+
+# 3f Count CTs missing EJI values
 #    n = 8
 #    These are CTs that do not have some census data (see Script 1_04)
 CTs_mis_eji <- gt_fips[!gt_fips %in% eji_nyc$geoid]

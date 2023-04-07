@@ -220,6 +220,14 @@ traf_eji_ice_daily %>% write_rds(file = paste0(data_path, 'full_dataset_daily.rd
 #### 3: Determine Quantiles for ICE and EJI #### 
 ####********************************************
 
+# Note: All quantiles are calculated such that Q1 corresponds to the lower values,
+#       and Q5 corresponds to the higher values. However, for ICE higher values 
+#       correspond to the most privileged group, while lower values correspond to
+#       the most disadvantaged group. In contrast for EJI, higher values correspond
+#       to the most burdened group, while lower values correspond to the least
+#       burdened group. For display purposes only, (3_01) the quantiles of EJI will
+#       be reversed so that Q1 corresponds to the most burdened group.
+
 # 3a Calculate quantiles
 #    Note: N Krieger uses quantiles to stratify by ICE in her NYC example
 #    Sub-scales use tertiles because not enough variation of SVM scale for quantiles
