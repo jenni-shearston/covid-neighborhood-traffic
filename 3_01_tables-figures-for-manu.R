@@ -333,6 +333,7 @@ dev.off()
 mod_results1 <- mod_results %>% 
   filter(str_detect(model_identifier, 'includeRecovery')) %>% 
   filter(str_detect(model_identifier, 'propMaroonRed')) %>% 
+  filter(!str_detect(model_identifier, 'rh')) %>% 
   mutate(mod_label = as.character(model_identifier)) %>% 
   separate(col = mod_label, into = c('mod_label', NA, NA), sep = '_') %>% 
   mutate(strata_type = case_when(str_detect(model_identifier, 'ejiQ') ~ 'EJI',
@@ -474,3 +475,92 @@ tiff(paste0(figure_path, 'figX_ejiModuleChlorMap.tiff'),
      units = "in", width = 10, height = 7, res = 300)
 ejiModuleTertsMap
 dev.off()
+
+
+####*********************************************************************
+#### 7: Prepare Model Results Forest Plot w Rush Hour Stratification #### 
+####*********************************************************************
+
+# 7a Clean strata names for plotting
+mod_results2 <- mod_results %>% 
+  filter(str_detect(model_identifier, 'rh')) %>% 
+  mutate(mod_label = as.character(model_identifier)) %>% 
+  separate(col = mod_label, into = c('mod_label', NA, NA), sep = '_') %>% 
+  mutate(facet_type = case_when(str_detect(model_identifier, 'rh0') ~ 'Not Rush Hour',
+                                str_detect(model_identifier, 'rh1') ~ 'Rush Hour'), 
+         mod_label = str_replace(mod_label, 'eji', 'EJI'),
+         mod_label = str_replace(mod_label, 'Q', ' Q'),
+         mod_label = str_replace(mod_label, 'ice', 'ICE'),
+         mod_label = str_replace(mod_label, 'HhincomeBw', ''),
+         mod_label = str_replace(mod_label, 'rh0|rh1', ''),
+         mod_label = factor(mod_label, 
+                            levels = c('ICE Q1', 'ICE Q2', 'ICE Q3', 'ICE Q4', 'ICE Q5',
+                                       'EJI Q1', 'EJI Q2', 'EJI Q3', 'EJI Q4', 'EJI Q5')),
+         mod_label_ejiFlipped = case_when(
+           mod_label == 'EJI Q1' ~ 'EJI Q5',
+           mod_label == 'EJI Q2' ~ 'EJI Q4',
+           mod_label == 'EJI Q4' ~ 'EJI Q2',
+           mod_label == 'EJI Q5' ~ 'EJI Q1',
+           TRUE ~ as.character(mod_label))) %>% 
+  arrange(facet_type, mod_label)
+
+# 7b Add an 'order' variable to use for plotting the y axis. This variable will leave
+#    two spaces between each strata on the y axis
+mod_results2$order = seq(1,60,by=3)
+
+# 7c Pivot so we can plot both coefficients 
+mod_results2 <- mod_results2 %>%  
+  pivot_longer(cols = coef_pause:uci_pauseEnd, names_sep = '_',
+               names_to = c('limit', 'names')) %>% 
+  pivot_wider(names_from = limit, values_from = value, names_repair = 'check_unique') 
+
+# 7d Create forest plot of rush hour results
+fig5_a <- mod_results2 %>% 
+  filter(facet_type == 'Rush Hour') %>% 
+  ggplot(aes(x = coef, y = order, xmin = lci, xmax = uci,
+             color = names, shape = names)) +
+  #geom_point() +
+  geom_pointrange(fatten = 1) +
+  geom_vline(aes(xintercept = 0), linetype = 'solid') +
+  scale_color_manual(values = c('black', 'blue')) +
+  xlim(c(-12,1)) +
+  scale_y_continuous(breaks = mod_results2$order, 
+                     labels = mod_results2$mod_label_ejiFlipped,
+                     limits = c(30,59)) +
+  geom_hline(aes(yintercept = 44.5), linetype = 'dashed', color = 'gray60') +
+  annotate('text', x = -10, y = 59, label = 'A: Rush Hours', size = 9/.pt) +
+  xlab("Effect Estimate") + ylab("Strata") + 
+  theme_bw() +
+  theme(text = element_text(size = 10),
+        legend.position = 'none')
+fig5_a
+
+# 7e Create forest plot of non-rush hour results
+fig5_b <- mod_results2 %>% 
+  filter(facet_type == 'Not Rush Hour') %>% 
+  ggplot(aes(x = coef, y = order, xmin = lci, xmax = uci,
+             color = names, shape = names)) +
+  #geom_point() +
+  geom_pointrange(fatten = 1) +
+  geom_vline(aes(xintercept = 0), linetype = 'solid') +
+  scale_color_manual(values = c('black', 'blue')) +
+  xlim(c(-12,1)) +
+  scale_y_continuous(breaks = mod_results2$order, 
+                     labels = mod_results2$mod_label_ejiFlipped,
+                     limits = c(1,29)) +
+  geom_hline(aes(yintercept = 14.5), linetype = 'dashed', color = 'gray60') +
+  annotate('text', x = -9, y = 29, label = 'B: Non-Rush Hours', size = 9/.pt) +
+  xlab("Effect Estimate") + ylab("Strata") + 
+  theme_bw() +
+  theme(text = element_text(size = 10),
+        legend.position = 'none')
+fig5_b
+
+# 7f Combine and save plot
+tiff(paste0(figure_path, 'fig5_ModResultsPlotRushHour.tiff'),
+     units = "cm", width = 16, height = 9, res = 300)
+plot_grid(fig5_a, fig5_b, rel_widths = c(1,1))
+dev.off()
+
+
+
