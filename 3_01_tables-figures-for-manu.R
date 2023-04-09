@@ -330,7 +330,7 @@ dev.off()
 ####******************************************
 
 # 5a Clean strata names for plotting
-mod_results <- mod_results %>% 
+mod_results1 <- mod_results %>% 
   filter(str_detect(model_identifier, 'includeRecovery')) %>% 
   filter(str_detect(model_identifier, 'propMaroonRed')) %>% 
   mutate(mod_label = as.character(model_identifier)) %>% 
@@ -374,10 +374,10 @@ mod_results <- mod_results %>%
 
 # 5b Add an 'order' variable to use for plotting the y axis. This variable will leave
 #    two spaces between each strata on the y axis
-mod_results$order = seq(1,57,by=3)
+mod_results1$order = seq(1,57,by=3)
 
 # 5c Pivot so we can plot both coefficients 
-mod_results <- mod_results %>%  
+mod_results1 <- mod_results1 %>%  
   pivot_longer(cols = coef_pause:uci_pauseEnd, names_sep = '_',
                names_to = c('limit', 'names')) %>% 
   pivot_wider(names_from = limit, values_from = value, names_repair = 'check_unique') 
@@ -392,7 +392,7 @@ forest_plot_color_palette2 <- c('goldenrod1', 'goldenrod2',
                                 'orangered', 'orangered2', 'orangered3')
 
 # 5e Create forest plot of model results for main analyses
-fig4_a <- mod_results %>% 
+fig4_a <- mod_results1 %>% 
   filter(facet_type == 'Main Analyses') %>%
   ggplot(aes(x = coef, y = order, xmin = lci, xmax = uci,
              color = names, shape = names)) +
@@ -413,7 +413,7 @@ fig4_a <- mod_results %>%
 fig4_a
 
 # 5f Create forest plot of model results for EJI modules
-fig4_b <- mod_results %>% 
+fig4_b <- mod_results1 %>% 
   filter(facet_type == 'EJI Modules') %>% 
   ggplot(aes(x = coef, y = order, xmin = lci, xmax = uci,
              color = names, shape = names)) +

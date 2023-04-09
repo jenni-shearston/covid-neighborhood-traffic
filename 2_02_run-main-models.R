@@ -62,6 +62,7 @@ model_path <- paste0(project.folder, 'outputs/models/')
 
 # 0d Load data
 fullData <- read_rds(paste0(data_path, 'full_dataset_wcovars_daily.rds'))
+fullData_rh <- read_rds(paste0(data_path, 'full_dataset_wcovars+rushhour_daily.rds'))
 
 
 ####*************************************
@@ -69,33 +70,39 @@ fullData <- read_rds(paste0(data_path, 'full_dataset_wcovars_daily.rds'))
 ####*************************************
 
 # 1a Nest by strata
-# 1a.i ICE HH Income and BW Race, 5 quantiles
+# 1a.i ICE HH Income and BW Race, 5 quintiles
 fullDataS <- fullData %>% group_by(ice_hhincome_bw_5) %>% nest() %>% 
   rename(strata = ice_hhincome_bw_5) %>% 
   mutate(strata = case_when(
     strata == 'Q1' ~ 'iceHhincomeBwQ1', strata == 'Q2' ~ 'iceHhincomeBwQ2',
     strata == 'Q3' ~ 'iceHhincomeBwQ3', strata == 'Q4' ~ 'iceHhincomeBwQ4',
     strata == 'Q5' ~ 'iceHhincomeBwQ5'))
-# 1a.ii EJI, 5 quantiles
+fullDataS_rh <- fullData_rh %>% group_by(ice_hhincome_bw_5, rush_hour) %>% nest() %>% 
+  mutate(strata = paste0('iceHhincomeBw', ice_hhincome_bw_5, 'rh', rush_hour)) %>% 
+  ungroup() %>% dplyr::select(strata, data)
+# 1a.ii EJI, 5 quintiles
 fullDataS.2 <- fullData %>% group_by(eji_5) %>% nest() %>% 
   rename(strata = eji_5) %>% 
   mutate(strata = case_when(
     strata == 'Q1' ~ 'ejiQ1', strata == 'Q2' ~ 'ejiQ2',
     strata == 'Q3' ~ 'ejiQ3', strata == 'Q4' ~ 'ejiQ4',
     strata == 'Q5' ~ 'ejiQ5'))
-# 1a.iii EJI EBM Module, 3 quantiles
+fullDataS.2_rh <- fullData_rh %>% group_by(eji_5, rush_hour) %>% nest() %>% 
+  mutate(strata = paste0('eji', eji_5, 'rh', rush_hour)) %>% 
+  ungroup() %>% dplyr::select(strata, data)
+# 1a.iii EJI EBM Module, 3 tertiles
 fullDataS.3 <- fullData %>% group_by(eji_ebm_3) %>% nest() %>% 
   rename(strata = eji_ebm_3) %>% 
   mutate(strata = case_when(
     strata == 'Q1' ~ 'ejiEbmQ1', strata == 'Q2' ~ 'ejiEbmQ2', 
     strata == 'Q3' ~ 'ejiEbmQ3'))
-# 1a.iv EJI SVM Module, 3 quantiles
+# 1a.iv EJI SVM Module, 3 tertiles
 fullDataS.4 <- fullData %>% group_by(eji_svm_3) %>% nest() %>% 
   rename(strata = eji_svm_3) %>% 
   mutate(strata = case_when(
     strata == 'Q1' ~ 'ejiSvmQ1', strata == 'Q2' ~ 'ejiSvmQ2', 
     strata == 'Q3' ~ 'ejiSvmQ3'))
-# 1a.v EJI HVM Module, 3 quantiles
+# 1a.v EJI HVM Module, 3 tertiles
 fullDataS.5 <- fullData %>% group_by(eji_hvm_3) %>% nest() %>% 
   rename(strata = eji_hvm_3) %>% 
   mutate(strata = case_when(
@@ -104,8 +111,8 @@ fullDataS.5 <- fullData %>% group_by(eji_hvm_3) %>% nest() %>%
 
 # 1b Bind together
 fullDataS <- fullDataS %>% 
-  bind_rows(fullDataS.2, fullDataS.3, fullDataS.4, fullDataS.5) %>% 
-  filter(!is.na(strata))
+  bind_rows(fullDataS.2, fullDataS.3, fullDataS.4, fullDataS.5, fullDataS_rh, fullDataS.2_rh) %>% 
+  filter(!is.na(strata)) %>% filter(!str_detect(strata, 'NA'))
 
 # 1c Create filtered dataset to exclude Phase 1 reopening and beyond for models
 #    that follow ITS impact model A
@@ -114,7 +121,8 @@ fullDataFS <- fullDataS %>%
   mutate(data = map(data, ~ filter(., date < '2020-06-08')))
 
 # 1d Clean environment
-rm(fullData, fullDataS.2, fullDataS.3, fullDataS.4, fullDataS.5)
+rm(fullData, fullDataS.2, fullDataS.3, fullDataS.4, fullDataS.5, fullData_rh,
+   fullDataS_rh, fullDataS.2_rh)
 
 
 ####****************************************************
@@ -232,10 +240,10 @@ doParallel::registerDoParallel(cl = my.cluster)
 #          b/c each core does the step independently (although the table is saved)
 
 # 3b.i Parallel option 
-tictoc::tic('Run 19 strata in parallel')
+tictoc::tic('Run 20 strata in parallel')
 mod_results <- 
   foreach(
-    i = 1:length(fullDataS$strata),
+    i = 20:length(fullDataS$strata),
     .combine = 'rbind'
   ) %dopar% {
     analyze_trafPause(strata = fullDataS$strata[[i]], dataForMod = fullDataS$data[[i]], 
