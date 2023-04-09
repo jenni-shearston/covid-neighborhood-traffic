@@ -1,7 +1,7 @@
 # Merge Traffic, ICE, EJI data
 # F31 Google Traffic COVID ITS Analysis
 # Jenni A. Shearston 
-# Updated 04/04/2023
+# Updated 04/08/2023
 
 ####***********************
 #### Table of Contents #### 
@@ -11,10 +11,11 @@
 # 0: Preparation 
 # 1: Merge and Assess Missingness
 # 2: Aggregate to Daily Temporal Resolution
-# 3: Determine Quantiles for ICE and EJI
-# 4: Add PAUSE Var and Time Covariates
-# 5: Add CT Centroids to Account for Spatial Autocorrelation
-# 6: Review Traffic Time Series
+# 3: Aggregate to Daily Temporal Resolution w Rush Hour
+# 4: Determine Quantiles for ICE and EJI
+# 5: Add PAUSE Var and Time Covariates
+# 6: Add CT Centroids to Account for Spatial Autocorrelation
+# 7: Review Traffic Time Series
 
 
 ####**************
@@ -119,8 +120,8 @@ traf_eji_ice %>% write_rds(file = paste0(data_path, 'full_dataset.rds'))
 
 # Note: Running the models with hourly resolution is too computationally 
 #       expensive for my computer. We will instead run the models at daily 
-#       resolution, and check for effect modification by time using two binary
-#       variables: rush hour / not rush hour and daytime / nighttime
+#       resolution, and check for effect modification by time using a binary
+#       variable: rush hour / not rush hour
 
 # 2a Aggregate to daily resolution
 #    Note: At the end of this aggregation, we remove 187 observations. These are dates 
@@ -216,8 +217,56 @@ traf_eji_ice_daily %>%
 traf_eji_ice_daily %>% write_rds(file = paste0(data_path, 'full_dataset_daily.rds'))
 
 
+####***********************************************************
+#### 3: Aggregate to Daily Temporal Resolution w Rush Hour #### 
+####***********************************************************
+
+# Notes: Reviewing the social-distancing paper (Shearston et al., 2021)
+#        and the NO2 changes during COVID-19 paper (Shearston et al., 2022)
+#        as well as NYC sources, rush hour was defined as:
+#        Weekday: 6-10am and 4-8pm 
+
+# 3a Assign hours to be rush hour or not
+traf_rh <- traf %>% 
+  mutate(date = date(captured_datetime),
+         no_image = as.numeric(ifelse(no_image == 'no image', 1, 0)),
+         hour = hour(captured_datetime),
+         dow = wday(captured_datetime, week_start = getOption("lubridate.week.start", 1)),
+         rush_hour = ifelse(hour > 5 & hour < 11 & dow < 6 | hour > 15 & hour < 21 & dow < 6 , 1, 0))
+
+# 3b Aggregate to day/rush-hour temporal resolution
+traf_rh <- traf_rh %>% 
+  group_by(poly_id, date, rush_hour) %>% 
+  summarise(speed_reduct_fact = mean(speed_reduct_fact, na.rm = T),
+            green_gray_85 = mean(green_gray_85, na.rm = T),
+            gt_pixcount_streets = mean(gt_pixcount_streets, na.rm = T),
+            prop_maroon_red = mean(prop_maroon_red, na.rm = T),
+            prop_green = mean(prop_green, na.rm = T),
+            gt_pixcount_maroon = mean(gt_pixcount_maroon, na.rm = T),
+            gt_pixcount_red = mean(gt_pixcount_red, na.rm = T),
+            gt_pixcount_orange = mean(gt_pixcount_orange, na.rm = T),
+            gt_pixcount_green = mean(gt_pixcount_green, na.rm = T),
+            gt_pixcount_gray = mean(gt_pixcount_gray, na.rm = T),
+            gt_pixcount_construction = mean(gt_pixcount_construction, na.rm = T),
+            gt_pixcount_emergency = mean(gt_pixcount_emergency, na.rm = T),
+            gt_pixcount_notsampled = mean(gt_pixcount_notsampled, na.rm = T),
+            gt_pixcount_background = mean(gt_pixcount_background, na.rm = T),
+            gt_pixcount_tot = mean(gt_pixcount_tot, na.rm = T),
+            no_image = sum(no_image),
+            gt_pixcount_notstreets = mean(gt_pixcount_notstreets, na.rm = T),
+            ice_gt = mean(ice_gt, na.rm = T)) %>% ungroup()
+
+#3c Merge data
+traf_eji_ice_daily_rh <- traf_rh %>% 
+  left_join(eji, by = c('poly_id' = 'geoid')) 
+traf_eji_ice_daily_rh <- traf_eji_ice_daily_rh %>% 
+  left_join(ice, by = c('poly_id'))
+traf_eji_ice_daily_rh <- traf_eji_ice_daily_rh %>% 
+  left_join(tracts_sf, by = c('poly_id' = 'geoid'))
+
+
 ####********************************************
-#### 3: Determine Quantiles for ICE and EJI #### 
+#### 4: Determine Quantiles for ICE and EJI #### 
 ####********************************************
 
 # Note: All quantiles are calculated such that Q1 corresponds to the lower values,
@@ -228,7 +277,7 @@ traf_eji_ice_daily %>% write_rds(file = paste0(data_path, 'full_dataset_daily.rd
 #       burdened group. For display purposes only, (3_01) the quantiles of EJI will
 #       be reversed so that Q1 corresponds to the most burdened group.
 
-# 3a Calculate quantiles
+# 4a Calculate quantiles
 #    Note: N Krieger uses quantiles to stratify by ICE in her NYC example
 #    Sub-scales use tertiles because not enough variation of SVM scale for quantiles
 #    Quantiles are *very* slightly different if they are determined in the full dataset
@@ -241,7 +290,7 @@ quants_eji_ebm = quantile(traf_eji_ice_daily$rpl_ebm, na.rm = T, probs = c(0, .3
 quants_eji_svm = quantile(traf_eji_ice_daily$rpl_svm, na.rm = T, probs = c(0, .33, .66, 1))
 quants_eji_hvm = quantile(traf_eji_ice_daily$rpl_hvm, na.rm = T, probs = c(0, .33, .66, 1))
 
-# 3b Assign new stratified variables
+# 4b Assign new stratified variables
 traf_eji_ice_daily <- traf_eji_ice_daily %>% 
   mutate(
     ice_hhincome_bw_5 = factor(case_when(
@@ -275,7 +324,7 @@ traf_eji_ice_daily <- traf_eji_ice_daily %>%
       rpl_hvm >= quants_eji_hvm[2] & rpl_hvm < quants_eji_hvm[3] ~ 'Q2',
       rpl_hvm >= quants_eji_hvm[3] ~ 'Q3')))
 
-# 3c Run tables to confirm missing obs counts match those above
+# 4c Run tables to confirm missing obs counts match those above
 table(traf_eji_ice_daily$ice_hhincome_bw_5, useNA = 'always')
 table(traf_eji_ice_daily$eji_5, useNA = 'always')
 table(traf_eji_ice_daily$eji_sens_5, useNA = 'always')
@@ -283,12 +332,21 @@ table(traf_eji_ice_daily$eji_ebm_3, useNA = 'always')
 table(traf_eji_ice_daily$eji_svm_3, useNA = 'always')
 table(traf_eji_ice_daily$eji_hvm_3, useNA = 'always')
 
+# 4d Add stratification variables to rush hour dataset
+# 4d.i Select only vars to add to rush hour dataset
+strat_vars <- traf_eji_ice_daily %>% 
+  dplyr::select(poly_id, ice_hhincome_bw_5,eji_5, eji_sens_5, eji_ebm_3, eji_svm_3, eji_hvm_3) %>% 
+  distinct()
+# 4d.ii Merge with rush hour dataset
+traf_eji_ice_daily_rh <- traf_eji_ice_daily_rh %>% 
+  left_join(strat_vars, by = 'poly_id')
   
+
 ####******************************************
-#### 4: Add PAUSE Var and Time Covariates #### 
+#### 5: Add PAUSE Var and Time Covariates #### 
 ####******************************************  
   
-# 4a Add PAUSE variable and time covariates
+# 5a Add PAUSE variable and time covariates
 traf_eji_ice_daily <- traf_eji_ice_daily %>% 
   mutate(
     pause = ifelse(date > '2020-03-22' & date < '2020-06-08', 1, 0),
@@ -297,15 +355,23 @@ traf_eji_ice_daily <- traf_eji_ice_daily %>%
     month = factor(month(date)),
     year = factor(year(date))
   )
+traf_eji_ice_daily_rh <- traf_eji_ice_daily_rh %>%
+  mutate(
+    pause = ifelse(date > '2020-03-22' & date < '2020-06-08', 1, 0),
+    pause_end = ifelse(date < '2020-06-08', 0, 1),
+    dow = factor(wday(date, label = T)),
+    month = factor(month(date)),
+    year = factor(year(date))
+  )
 
-# 4b Review new vars
+# 5b Review new vars
 table(traf_eji_ice_daily$pause, useNA = 'always')
 table(traf_eji_ice_daily$pause_end, useNA = 'always')
 table(traf_eji_ice_daily$dow, useNA = 'always')
 table(traf_eji_ice_daily$month, useNA = 'always')
 table(traf_eji_ice_daily$year, useNA = 'always')
 
-# 4c Add time_elapsed variable such that each possible day is included
+# 5c Add time_elapsed variable such that each possible day is included
 #    Note: There are 1,096 possible days (26,304 possible hours) in 2018-2020, 
 #          however we removed 3 duplicate 1am timepoints from Daylight Savings 
 #          earlier in the hourly data cleaning, leaving a totl of 26,301 hours
@@ -313,65 +379,76 @@ time_elapsed_df <- data.frame(date = seq(ymd('2018-01-01'), ymd('2020-12-31'), b
 time_elapsed_df <- time_elapsed_df %>% mutate(time_elapsed = row_number())
 traf_eji_ice_daily <- traf_eji_ice_daily %>% 
   left_join(time_elapsed_df, by = 'date')
+traf_eji_ice_daily_rh <- traf_eji_ice_daily_rh %>% 
+  left_join(time_elapsed_df, by = 'date')
 
 
 ####****************************************************************
-#### 5: Add CT Centroids to Account for Spatial Autocorrelation #### 
+#### 6: Add CT Centroids to Account for Spatial Autocorrelation #### 
 ####****************************************************************
 
-# 5a Get census tracts centroids
-# 5a.i Obtain centroids
+# 6a Get census tracts centroids
+# 6a.i Obtain centroids
 cents <- sf::st_centroid(tracts_sf) %>% sf::st_transform('WGS84')
-# 5a.ii Convert to dataframe
+# 6a.ii Convert to dataframe
 cents <- data.frame(poly_id = cents$geoid, sf::st_coordinates(cents))
-# 5a.iii Rename coordinate vars
+# 6a.iii Rename coordinate vars
 colnames(cents)[2:3] <- c('lon', 'lat')
-# 5a.iv Plot to confirm
+# 6a.iv Plot to confirm
 cents %>% ggplot(aes(x = lon, y = lat)) + geom_point()
 
-# 5b Add to traffic + covariate dataset
+# 6b Add to traffic + covariate dataset
 traf_eji_ice_daily <- traf_eji_ice_daily %>% dplyr::select(-geometry) %>% 
   left_join(cents, by = 'poly_id')
+traf_eji_ice_daily_rh <- traf_eji_ice_daily_rh %>% dplyr::select(-geometry) %>% 
+  left_join(cents, by = 'poly_id')
 
-# 5c Save dataset
+# 6c Save dataset
 traf_eji_ice_daily %>% write_rds(file = paste0(data_path, 'full_dataset_wcovars_daily.rds'))
+traf_eji_ice_daily_rh %>% write_rds(file = paste0(data_path, 'full_dataset_wcovars+rushhour_daily.rds')) 
 
 
 ####***********************************
-#### 6: Review Traffic Time Series #### 
+#### 7: Review Traffic Time Series #### 
 ####***********************************
 
-# 6a Review time series of traffic data
+# 7a Review time series of traffic data
 #    Note: From June 22 through Sept 1 2018 percent green is weirdly low
-# 6a.i Proportion green variable
+# 7a.i Proportion green variable
 traf_eji_ice_daily %>% group_by(date) %>% 
   summarise(mean_prop_green = mean(prop_green, na.rm = T)) %>% 
   ggplot(aes(x = date, y = mean_prop_green)) +
   geom_line() 
-# 6a.ii Same is true for green pixel counts
+# 7a.ii Same is true for green pixel counts
 traf_eji_ice_daily %>% group_by(date) %>% 
   summarise(mean_gt_pixcount_green = mean(gt_pixcount_green, na.rm = T)) %>% 
   ggplot(aes(x = date, y = mean_gt_pixcount_green)) +
   geom_line() 
-# 6a.iii Percent maroon+red also dips but less so, and pandemic effect more apparent
+# 7a.iii Percent maroon+red also dips but less so, and pandemic effect more apparent
 traf_eji_ice_daily %>% group_by(date) %>% 
   summarise(mean_prop_maroon_red = mean(prop_maroon_red, na.rm = T)) %>% 
   ggplot(aes(x = date, y = mean_prop_maroon_red)) +
   geom_line() 
-# 6a.iv Also seen in speed reduction factor, also more apparent pandemic effect
+# 7a.iv Also seen in speed reduction factor, also more apparent pandemic effect
 traf_eji_ice_daily %>% group_by(date) %>% 
   summarise(mean_speed_reduct_fact = mean(speed_reduct_fact, na.rm = T)) %>% 
   ggplot(aes(x = date, y = mean_speed_reduct_fact)) +
   geom_line() 
-# 6a.v Decrease also seen for orange pixcount
+# 7a.v Decrease also seen for orange pixcount
 traf_eji_ice_daily %>% group_by(date) %>% 
   summarise(mean_gt_pixcount_orange = mean(gt_pixcount_orange, na.rm = T)) %>% 
   ggplot(aes(x = date, y = mean_gt_pixcount_orange)) +
   geom_line() 
-# 6a.vi Also present in hourly dataset
+# 7a.vi Also present in hourly dataset
 traf %>% group_by(captured_datetime) %>% 
   summarise(mean_gt_pixcount_orange = mean(gt_pixcount_orange, na.rm = T)) %>% 
   ggplot(aes(x = captured_datetime, y = mean_gt_pixcount_orange)) +
+  geom_line() 
+# 7a.vii Percent maroon+red faceted by rush hour
+traf_eji_ice_daily_rh %>% group_by(date, rush_hour) %>% 
+  summarise(mean_prop_maroon_red = mean(prop_maroon_red, na.rm = T)) %>% 
+  mutate(rush_hour = factor(rush_hour)) %>% 
+  ggplot(aes(x = date, y = mean_prop_maroon_red, color = rush_hour)) +
   geom_line() 
 
 
