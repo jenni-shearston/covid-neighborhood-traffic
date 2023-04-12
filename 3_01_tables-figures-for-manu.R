@@ -442,41 +442,6 @@ plot_grid(fig4_a, fig4_b, rel_widths = c(1,1))
 dev.off()
 
 
-####*******************************************
-#### 6: Prepare Map of EJI Module Tertiles #### 
-####*******************************************
-
-# 6a Prepare chloropleth map of EJI tertiles
-ejiModuleTertsMap <- 
-  fullData %>% 
-  dplyr::select(poly_id, eji_ebm_3, eji_svm_3, eji_hvm_3, date) %>% 
-  rename(EBM = eji_ebm_3, SVM = eji_svm_3, HVM = eji_hvm_3) %>% 
-  filter(date == '2020-03-09') %>% 
-  left_join(tracts_sf, by = c('poly_id' = 'geoid')) %>% 
-  pivot_longer(cols = EBM:HVM,
-               names_to = 'module',
-               values_to = 'tertile') %>% 
-  mutate(tertile = factor(tertile, levels = c('Q3', 'Q2', 'Q1'))) %>% 
-  ggplot(aes(geometry = geometry, fill = tertile)) + 
-  geom_sf(lwd = 0.2) + 
-  facet_wrap(~module) +
-  scale_fill_viridis(name = 'Environmental \n Justice Index',
-                     option = 'viridis',
-                     discrete = T,
-                     labels = c('Q3 (High Burden)', 'Q2',
-                                'Q1 (Low Burden)', 'Not Enough Data')) +
-  theme_void() +
-  theme(panel.grid = element_line(color = "transparent"),
-        text = element_text(size = 16))
-ejiModuleTertsMap
-
-# 6b Save plot
-tiff(paste0(figure_path, 'figX_ejiModuleChlorMap.tiff'),
-     units = "in", width = 10, height = 7, res = 300)
-ejiModuleTertsMap
-dev.off()
-
-
 ####*********************************************************************
 #### 7: Prepare Model Results Forest Plot w Rush Hour Stratification #### 
 ####*********************************************************************
@@ -561,6 +526,5 @@ tiff(paste0(figure_path, 'fig5_ModResultsPlotRushHour.tiff'),
      units = "cm", width = 16, height = 9, res = 300)
 plot_grid(fig5_a, fig5_b, rel_widths = c(1,1))
 dev.off()
-
 
 
