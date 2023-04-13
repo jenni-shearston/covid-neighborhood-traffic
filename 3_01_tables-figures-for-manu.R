@@ -78,18 +78,16 @@ inset <- jpeg::readJPEG(paste0(figure_path, 'nyc_inset.jpeg'), native = T)
 #### 1: Prepare Descriptive Table for EJI/ICE Strata CTs #### 
 ####*********************************************************
 
-## ADD FILTER STATEMENT DEPENDING ON WHAT 'MAIN' MODEL IS
-
 # 1a Nest by strata
 # 1a.i ICE HH Income and BW Race, 5 quantiles
-fullDataS <- fullDataF %>% group_by(ice_hhincome_bw_5) %>% nest() %>% 
+fullDataS <- fullData %>% group_by(ice_hhincome_bw_5) %>% nest() %>% 
   rename(strata = ice_hhincome_bw_5) %>% 
   mutate(strata = case_when(
     strata == 'Q1' ~ 'iceHhincomeBwQ1', strata == 'Q2' ~ 'iceHhincomeBwQ2',
     strata == 'Q3' ~ 'iceHhincomeBwQ3', strata == 'Q4' ~ 'iceHhincomeBwQ4',
     strata == 'Q5' ~ 'iceHhincomeBwQ5'))
 # 1a.ii EJI, 5 quantiles
-fullDataS.2 <- fullDataF %>% group_by(eji_5) %>% nest() %>% 
+fullDataS.2 <- fullData %>% group_by(eji_5) %>% nest() %>% 
   rename(strata = eji_5) %>% 
   mutate(strata = case_when(
     strata == 'Q1' ~ 'ejiQ1', strata == 'Q2' ~ 'ejiQ2',
@@ -124,26 +122,48 @@ t1_census <- fullDataS %>%
          sd_pblack = map(.x = data, ~ (sd(.x$nhblack_race_est/.x$all_race_est, na.rm = T)*100))) %>% 
   dplyr::select(-data) %>% 
   mutate(across(where(is.list), ~ as.numeric(.x)),
-         across(where(is.numeric), ~ round(.x, digits = 1))) %>% 
-  arrange(strata)
+         across(where(is.numeric), ~ round(.x, digits = 1)),
+         mean_pop = round(mean_pop, digits = 0),
+         sd_pop = round(sd_pop, digits = 0)) %>% 
+  mutate(strata_label_ejiFlipped = case_when(
+    strata == 'ejiQ1' ~ 'ejiQ5',
+    strata == 'ejiQ2' ~ 'ejiQ4',
+    strata == 'ejiQ4' ~ 'ejiQ2',
+    strata == 'ejiQ5' ~ 'ejiQ1',
+    TRUE ~ as.character(strata))) %>% 
+  dplyr::select(strata, strata_label_ejiFlipped, everything()) %>% 
+  arrange(strata_label_ejiFlipped)
 
 # 1f Calculate column values for traffic pre and post pause
 # 1f.i Make function to calculate mean and sd traf values pre and post pause
 aggTrafByPause = function(df){
-  df <- df %>% group_by(pause) %>% 
-    summarise(mean_propGreen = round(mean(prop_green, na.rm = T), digits = 1),
-              sd_propGreen = round(sd(prop_green, na.rm = T), digits = 1))
+  df <- df %>% mutate(pause_combo = case_when(
+    pause == 0 & pause_end == 0 ~ 'pre-pause',
+    pause == 1 & pause_end == 0 ~ 'pause',
+    pause == 0 & pause_end == 1 ~ 'recovery'
+  )) %>% 
+    group_by(pause_combo) %>% 
+    summarise(mean_propMaroonRed = round(mean(prop_maroon_red, na.rm = T), digits = 1),
+              sd_propMaroonRed = round(sd(prop_maroon_red, na.rm = T), digits = 1))
 }
 # 1f.ii Run function and convert df to table-like format
 t1_traf <- fullDataS %>% 
   mutate(agg_traf = map(.x = data, ~ aggTrafByPause(.x))) %>% 
   dplyr::select(-data) %>% unnest(agg_traf) %>% 
-  pivot_wider(names_from = pause,
-              values_from = c(mean_propGreen, sd_propGreen)) %>% 
+  pivot_wider(names_from = pause_combo,
+              values_from = c(mean_propMaroonRed, sd_propMaroonRed)) %>% 
   janitor::clean_names() %>% 
-  dplyr::select(strata, mean_prop_green_pre_pause, sd_prop_green_pre_pause,
-                mean_prop_green_pause, sd_prop_green_pause) %>% 
-  arrange(strata)
+  mutate(strata_label_ejiFlipped = case_when(
+    strata == 'ejiQ1' ~ 'ejiQ5',
+    strata == 'ejiQ2' ~ 'ejiQ4',
+    strata == 'ejiQ4' ~ 'ejiQ2',
+    strata == 'ejiQ5' ~ 'ejiQ1',
+    TRUE ~ as.character(strata))) %>% 
+  dplyr::select(strata, strata_label_ejiFlipped, 
+                mean_prop_maroon_red_pre_pause, sd_prop_maroon_red_pre_pause,
+                mean_prop_maroon_red_pause, sd_prop_maroon_red_pause,
+                mean_prop_maroon_red_recovery, sd_prop_maroon_red_recovery) %>% 
+  arrange(strata_label_ejiFlipped)
 
 
 ####******************************************************
@@ -331,9 +351,11 @@ dev.off()
 
 # 5a Clean strata names for plotting
 mod_results1 <- mod_results %>% 
-  filter(str_detect(model_identifier, 'includeRecovery')) %>% 
-  filter(str_detect(model_identifier, 'propMaroonRed')) %>% 
   filter(!str_detect(model_identifier, 'rh')) %>% 
+  filter(!str_detect(model_identifier,'propGreen')) %>% 
+  filter(!str_detect(model_identifier, 'main')) %>% 
+  filter(!str_detect(model_identifier, 'Sens|sens')) %>% 
+  filter(!str_detect(model_identifier, 'ModsAdjusted')) %>% 
   mutate(mod_label = as.character(model_identifier)) %>% 
   separate(col = mod_label, into = c('mod_label', NA, NA), sep = '_') %>% 
   mutate(strata_type = case_when(str_detect(model_identifier, 'ejiQ') ~ 'EJI',
@@ -402,12 +424,12 @@ fig4_a <- mod_results1 %>%
   geom_vline(aes(xintercept = 0), linetype = 'solid') +
   scale_color_manual(values = c('black', 'blue')) +
   xlim(c(-8,1)) +
-  scale_y_continuous(breaks = mod_results$order, 
-                     labels = mod_results$mod_label_ejiFlipped,
+  scale_y_continuous(breaks = mod_results1$order, 
+                     labels = mod_results1$mod_label_ejiFlipped,
                      limits = c(1,29)) +
   geom_hline(aes(yintercept = 14.5), linetype = 'dashed', color = 'gray60') +
   annotate('text', x = -6, y = 29, label = 'A: Main Analyses', size = 9/.pt) +
-  xlab("Effect Estimate") + ylab("Strata") + 
+  xlab("Decrease in % Traffic Congestion") + ylab("Strata") + 
   theme_bw() +
   theme(text = element_text(size = 10),
         legend.position = 'none')
@@ -423,13 +445,13 @@ fig4_b <- mod_results1 %>%
   geom_vline(aes(xintercept = 0), linetype = 'solid') +
   scale_color_manual(values = c('black', 'blue')) +
   xlim(c(-8,1)) +
-  scale_y_continuous(breaks = mod_results$order, 
-                     labels = mod_results$mod_label_ejiFlipped,
+  scale_y_continuous(breaks = mod_results1$order, 
+                     labels = mod_results1$mod_label_ejiFlipped,
                      limits = c(30,56)) +
   geom_hline(aes(yintercept = 38.5), linetype = 'dashed', color = 'gray60') +
   geom_hline(aes(yintercept = 47.5), linetype = 'dashed', color = 'gray60') +
   annotate('text', x = -6, y = 56, label = 'B: EJI Modules', size = 9/.pt) +
-  xlab("Effect Estimate") + ylab("Strata") + 
+  xlab("Decrease in % Traffic Congestion") + ylab("Strata") + 
   theme_bw() +
   theme(text = element_text(size = 10),
         legend.position = 'none')
@@ -494,7 +516,7 @@ fig5_a <- mod_results2 %>%
                      limits = c(30,59)) +
   geom_hline(aes(yintercept = 44.5), linetype = 'dashed', color = 'gray60') +
   annotate('text', x = -10, y = 59, label = 'A: Rush Hours', size = 9/.pt) +
-  xlab("Effect Estimate") + ylab("Strata") + 
+  xlab("Decrease in % Traffic Congestion") + ylab("Strata") + 
   theme_bw() +
   theme(text = element_text(size = 10),
         legend.position = 'none')
@@ -515,7 +537,7 @@ fig5_b <- mod_results2 %>%
                      limits = c(1,29)) +
   geom_hline(aes(yintercept = 14.5), linetype = 'dashed', color = 'gray60') +
   annotate('text', x = -9, y = 29, label = 'B: Non-Rush Hours', size = 9/.pt) +
-  xlab("Effect Estimate") + ylab("Strata") + 
+  xlab("Decrease in % Traffic Congestion") + ylab("Strata") + 
   theme_bw() +
   theme(text = element_text(size = 10),
         legend.position = 'none')
