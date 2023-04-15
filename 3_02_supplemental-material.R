@@ -72,7 +72,7 @@ ejiModuleTertsMap <-
   geom_sf(lwd = 0.2) + 
   facet_wrap(~module) +
   scale_fill_viridis(name = 'Environmental \n Justice Index',
-                     option = 'viridis',
+                     option = 'cividis',
                      discrete = T,
                      labels = c('Q3 (High Burden)', 'Q2',
                                 'Q1 (Low Burden)', 'Not Enough Data')) +
