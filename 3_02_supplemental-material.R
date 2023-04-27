@@ -74,8 +74,8 @@ ejiModuleTertsMap <-
   scale_fill_viridis(name = 'Environmental \n Justice Index',
                      option = 'cividis',
                      discrete = T,
-                     labels = c('T3 (High Burden)', 'T2',
-                                'T1 (Low Burden)', 'Not Enough Data')) +
+                     labels = c('T1 (High Burden)', 'T2',
+                                'T3 (Low Burden)', 'Not Enough Data')) +
   theme_void() +
   theme(panel.grid = element_line(color = "transparent"),
         text = element_text(size = 16))
@@ -123,8 +123,8 @@ mod_results3 <- mod_results %>%
   arrange(mod_label)
 
 # 2b Add an 'order' variable to use for plotting the y axis. 
-mod_results3$order = c(-0.5,0.5,2.5,3.5,5.5,6.5,8.5,9.5,11.5,12.5,
-                       14.5,15.5,17.5,18.5,20.5,21.5,23.5,24.5,26.5,27.5)
+mod_results3$order = c(-0.5,0,0.5,2.5,3,3.5,5.5,6,6.5,8.5,9,9.5,11.5,12,12.5,
+                       14.5,15,15.5,17.5,18,18.5,20.5,21,21.5,23.5,24,24.5,25,26.5,27,27.5)
 
 # 2c Pivot so we can plot both coefficients 
 mod_results3 <- mod_results3 %>%  
@@ -401,7 +401,7 @@ dec_prePost_map_a <-
         legend.position = 'none')
 dec_prePost_map_a
 
-# 2c Create panel B - Monday after Pause was implemented
+# 6e Create panel B - Monday after Pause was implemented
 dec_prePost_map_b <- 
   deciles_df %>% 
   left_join(tracts_sf, by = c('poly_id' = 'geoid')) %>% 
@@ -417,15 +417,84 @@ dec_prePost_map_b <-
         text = element_text(size = 10))
 dec_prePost_map_b
 
-# 2d Combine panels into one plot and save
+# 6f Combine panels into one plot and save
 tiff(paste0(figure_path, 'figX_DecilePrePostPauseChoroMap.tiff'),
      units = "cm", width = 16, height = 9, res = 300)
 dec_prePost_map_a + dec_prePost_map_b
 dev.off()
 
 
+####*******************************************************
+#### 7: Plot: Histograms of CT/Date Traffic Correlation Tensor Term Knots #### 
+####*******************************************************
 
+# These histograms were run to show the variation in correlations between
+# traffic congestion (values) in census tracts (columns) [rows = unique dates],
+# as a way of assessing spatial and temporal autocorrelation.
 
+# This was prompted because when running the sensitivity analyses changing
+# knot values for the tensor product, no changes occurred to any effect estimates
+# or standard errors (although R2 values changed, so they were different models)
 
+# We run the correlations and histograms for one of most clustered strata (ICE Q1)
+# for both the data and the residuals of the model with the lowest tensor term knot
+# values
 
+#***************** Original data
 
+# 7a Prepare dataframe for correlations
+corDF_iceQ1 <- fullData %>% filter(ice_hhincome_bw_5 == 'Q1') %>% 
+  dplyr::select(date, poly_id, prop_maroon_red) %>% 
+  pivot_wider(names_from = poly_id,
+              values_from = prop_maroon_red) %>% 
+  dplyr::select(-date)
+
+# 7b Run correlations
+cor_iceQ1 <- cor(corDF_iceQ1, use = 'complete.obs')
+
+# 7c Histogram of correlations
+ggplot() +
+  geom_histogram(aes(x = cor_iceQ1))
+  
+#***************** Residuals from sens model with knots of 4 (Lat) and 2 (Lon)
+
+# 7d Load model
+mod4hist <- read_rds(paste0(model_path, 'iceHhincomeBwQ1_propMaroonRed_sensKnots4.2.rds'))
+
+# 7e Pull residuals and add to dataframe for correlations  
+corDF_iceQ1_resids <- fullData %>% filter(ice_hhincome_bw_5 == 'Q1') %>% 
+  ungroup() %>% 
+  dplyr::select(date, poly_id) %>% 
+  mutate(resids = mod4hist$gam$residuals) %>% 
+  pivot_wider(names_from = poly_id,
+              values_from = resids) %>% 
+  dplyr::select(-date)
+
+# 7f Run correlations
+cor_iceQ1_resids <- cor(corDF_iceQ1_resids, use = 'complete.obs')
+
+# 7g Histogram of correlations
+ggplot() +
+  geom_histogram(aes(x = cor_iceQ1_resids))
+
+#***************** Residuals from sens model with knots of 11 (Lat) and 5 (Lon)
+
+# 7h Load model
+mod4hist2 <- read_rds(paste0(model_path, 'iceHhincomeBwQ1_propMaroonRed_sensKnots11.5.rds'))
+
+# 7i Pull residuals and add to dataframe for correlations  
+corDF_iceQ1_resids2 <- fullData %>% filter(ice_hhincome_bw_5 == 'Q1') %>% 
+  ungroup() %>% 
+  dplyr::select(date, poly_id) %>% 
+  mutate(resids = mod4hist2$gam$residuals) %>% 
+  pivot_wider(names_from = poly_id,
+              values_from = resids) %>% 
+  dplyr::select(-date)
+
+# 7j Run correlations
+cor_iceQ1_resids2 <- cor(corDF_iceQ1_resids2, use = 'complete.obs')
+
+# 7k Histogram of correlations
+ggplot() +
+  geom_histogram(aes(x = cor_iceQ1_resids2))
+  

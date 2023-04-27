@@ -404,6 +404,7 @@ mod_results1 <- mod_results %>%
                                  str_detect(model_identifier, 'Ebm') ~ 'EBM',
                                  str_detect(model_identifier, 'Svm') ~ 'SVM',
                                  str_detect(model_identifier, 'Hvm') ~ 'HVM'),
+         Index = factor(Index, levels = c('ICE', 'EJI', 'EBM', 'HVM', 'SVM')),
          Analysis = case_when(str_detect(model_identifier, 'ice|ejiQ') ~ 'Main Analyses',
                               str_detect(model_identifier, 'Ebm|Svm|Hvm') ~ 'EJI Modules'), 
          mod_label = str_replace(mod_label, 'eji', 'EJI'),
@@ -456,13 +457,13 @@ mod_results1 <- mod_results1 %>%
 fig4_a <- mod_results1 %>% 
   filter(Analysis == 'Main Analyses') %>%
   ggplot(aes(y = quintile_label, x = coef, xmin = lci, xmax = uci,
-             fill = Index, group = Index)) +
+             fill = Policy, group = Policy)) +
   geom_col(position = "dodge", width = .8) +
   geom_errorbar(position = "dodge", size = 1) +
   geom_vline(aes(xintercept = 0), linetype = 'solid') +
-  scale_fill_manual(values = c('#357BA2FF', '#CB1B4FFF')) +
+  scale_fill_manual(values = cividis(n = 2)) +  
   xlim(c(-8,0.5)) +
-  facet_wrap(~Policy, ncol = 1) +
+  facet_wrap(~Index, ncol = 1) +
   xlab("") + ylab("") + 
   theme_bw() +
   theme(text = element_text(size = 9.5), legend.position = 'top',
@@ -473,16 +474,16 @@ fig4_a
 fig4_b <- mod_results1 %>% 
   filter(Analysis == 'EJI Modules') %>%
   ggplot(aes(y = tertile_label, x = coef, xmin = lci, xmax = uci,
-             fill = Index, group = Index)) +
+             fill = Policy, group = Policy)) +
   geom_col(position = "dodge", width = .8) +
   geom_errorbar(position = "dodge", size = 1) +
   geom_vline(aes(xintercept = 0), linetype = 'solid') +
-  scale_fill_manual(values = cividis(n = 3)) +
+  scale_fill_manual(values = cividis(n = 2)) +
   xlim(c(-8, 0.5)) +
-  facet_wrap(~Policy, ncol = 1) +
+  facet_wrap(~Index, ncol = 1) +
   xlab("") + ylab("") + 
   theme_bw() +
-  theme(text = element_text(size = 9.5), legend.position = 'top',
+  theme(text = element_text(size = 9.5), legend.position = 'none',
         axis.text.y = element_text(size = 10))
 fig4_b
 
@@ -510,9 +511,11 @@ mod_results2 <- mod_results %>%
   mutate(mod_label = as.character(model_identifier)) %>% 
   separate(col = mod_label, into = c('mod_label', NA, NA), sep = '_') %>% 
   mutate(rh_indicator = case_when(str_detect(model_identifier, 'rh0') ~ 'Not Rush Hour',
-                                str_detect(model_identifier, 'rh1') ~ 'Rush Hour'), 
+                                str_detect(model_identifier, 'rh1') ~ 'Rush Hour'),
+         rh_indicator = factor(rh_indicator, levels = c('Rush Hour', 'Not Rush Hour')),
          Index = case_when(str_detect(model_identifier, 'ejiQ') ~ 'EJI',
                            str_detect(model_identifier, 'ice') ~ 'ICE'),
+         Index = factor(Index, levels = c("ICE", 'EJI')),
          mod_label = str_replace(mod_label, 'eji', 'EJI'),
          mod_label = str_replace(mod_label, 'Q', ' Q'),
          mod_label = str_replace(mod_label, 'ice', 'ICE'),
@@ -542,15 +545,15 @@ mod_results2 <- mod_results2 %>%
   
 # 6c Create grouped bar chart for rush hour time points
 fig5_a <- mod_results2 %>% 
-  filter(rh_indicator == 'Rush Hour') %>%
+  filter(Index == 'ICE') %>%
   ggplot(aes(y = quintile_label, x = coef, xmin = lci, xmax = uci,
-             fill = Index, group = Index)) +
+             fill = Policy, group = Policy)) +
   geom_col(position = "dodge", width = .8) +
   geom_errorbar(position = "dodge", size = 1) +
   geom_vline(aes(xintercept = 0), linetype = 'solid') +
-  scale_fill_manual(values = c('#357BA2FF', '#CB1B4FFF')) +
+  scale_fill_manual(values = cividis(n = 2)) +
   xlim(c(-12,0.5)) +
-  facet_wrap(~Policy, ncol = 1) +
+  facet_wrap(~rh_indicator, ncol = 1) +
   xlab("") + ylab("") + 
   theme_bw() +
   theme(text = element_text(size = 9.5), legend.position = 'top',
@@ -559,15 +562,15 @@ fig5_a
 
 # 6d Create grouped bar chart for rush hour time points
 fig5_b <- mod_results2 %>% 
-  filter(rh_indicator == 'Not Rush Hour') %>%
+  filter(Index == 'EJI') %>%
   ggplot(aes(y = quintile_label, x = coef, xmin = lci, xmax = uci,
-             fill = Index, group = Index)) +
+             fill = Policy, group = Policy)) +
   geom_col(position = "dodge", width = .8) +
   geom_errorbar(position = "dodge", size = 1) +
   geom_vline(aes(xintercept = 0), linetype = 'solid') +
-  scale_fill_manual(values = c('#357BA2FF', '#CB1B4FFF')) +
+  scale_fill_manual(values = cividis(n = 2)) +
   xlim(c(-12,0.5)) +
-  facet_wrap(~Policy, ncol = 1) +
+  facet_wrap(~rh_indicator, ncol = 1) +
   xlab("") + ylab("") + 
   theme_bw() +
   theme(text = element_text(size = 9.5), legend.position = 'none',
@@ -577,8 +580,8 @@ fig5_b
 # 6e Create labelling variables for use in Grobs below
 xlab = 'Decrease in % Traffic Congestion from Pre-Pause Trend'
 ylab = 'Strata'
-rh_label = ': Rush Hours'
-nrh_label = ': Non Rush Hours'
+ice_label = ': ICE'
+eji_label = ': EJI'
 
 # 6f Combine and save plot
 tiff(paste0(figure_path, 'fig5_ModResultsPlot_RushHour.tiff'),
@@ -586,8 +589,8 @@ tiff(paste0(figure_path, 'fig5_ModResultsPlot_RushHour.tiff'),
 fig5_a + fig5_b + plot_annotation(tag_levels = 'A')
 grid::grid.draw(grid::textGrob(xlab, x = 0.5,  y = 0.05, gp = grid::gpar(fontsize = 10)))
 grid::grid.draw(grid::textGrob(ylab, x = 0.03,  rot = 90, gp = grid::gpar(fontsize = 10)))
-grid::grid.draw(grid::textGrob(rh_label, x = 0.115,  y = 0.936, gp = grid::gpar(fontsize = 11)))
-grid::grid.draw(grid::textGrob(nrh_label, x = 0.625,  y = 0.936, gp = grid::gpar(fontsize = 11)))
+grid::grid.draw(grid::textGrob(ice_label, x = 0.075,  y = 0.936, gp = grid::gpar(fontsize = 11)))
+grid::grid.draw(grid::textGrob(eji_label, x = 0.561,  y = 0.936, gp = grid::gpar(fontsize = 11)))
 dev.off()
 
 
