@@ -374,7 +374,7 @@ table(traf_eji_ice_daily$year, useNA = 'always')
 # 5c Add time_elapsed variable such that each possible day is included
 #    Note: There are 1,096 possible days (26,304 possible hours) in 2018-2020, 
 #          however we removed 3 duplicate 1am timepoints from Daylight Savings 
-#          earlier in the hourly data cleaning, leaving a totl of 26,301 hours
+#          earlier in the hourly data cleaning, leaving a total of 26,301 hours
 time_elapsed_df <- data.frame(date = seq(ymd('2018-01-01'), ymd('2020-12-31'), by = 'days'))
 time_elapsed_df <- time_elapsed_df %>% mutate(time_elapsed = row_number())
 traf_eji_ice_daily <- traf_eji_ice_daily %>% 

@@ -424,9 +424,9 @@ dec_prePost_map_a + dec_prePost_map_b
 dev.off()
 
 
-####*******************************************************
+####**************************************************************************
 #### 7: Plot: Histograms of CT/Date Traffic Correlation Tensor Term Knots #### 
-####*******************************************************
+####**************************************************************************
 
 # These histograms were run to show the variation in correlations between
 # traffic congestion (values) in census tracts (columns) [rows = unique dates],
@@ -498,3 +498,62 @@ cor_iceQ1_resids2 <- cor(corDF_iceQ1_resids2, use = 'complete.obs')
 ggplot() +
   geom_histogram(aes(x = cor_iceQ1_resids2))
   
+
+####****************************************************
+#### 7: Plot: Histogram of Dates with Missing Hours #### 
+####****************************************************
+
+# 8a Load hourly dataset
+traf <- read_fst(paste0(data_path, 'gt18-20_2010CTs.fst'))
+  
+# 8b Aggregate to daily
+traf_daily <- traf %>% 
+  mutate(date = date(captured_datetime),
+         no_image = as.numeric(ifelse(no_image == 'no image', 1, 0))) %>% 
+  group_by(poly_id, date) %>% 
+  summarise(speed_reduct_fact = mean(speed_reduct_fact, na.rm = T),
+            green_gray_85 = mean(green_gray_85, na.rm = T),
+            gt_pixcount_streets = mean(gt_pixcount_streets, na.rm = T),
+            prop_maroon_red = mean(prop_maroon_red, na.rm = T),
+            prop_green = mean(prop_green, na.rm = T),
+            gt_pixcount_maroon = mean(gt_pixcount_maroon, na.rm = T),
+            gt_pixcount_red = mean(gt_pixcount_red, na.rm = T),
+            gt_pixcount_orange = mean(gt_pixcount_orange, na.rm = T),
+            gt_pixcount_green = mean(gt_pixcount_green, na.rm = T),
+            gt_pixcount_gray = mean(gt_pixcount_gray, na.rm = T),
+            gt_pixcount_construction = mean(gt_pixcount_construction, na.rm = T),
+            gt_pixcount_emergency = mean(gt_pixcount_emergency, na.rm = T),
+            gt_pixcount_notsampled = mean(gt_pixcount_notsampled, na.rm = T),
+            gt_pixcount_background = mean(gt_pixcount_background, na.rm = T),
+            gt_pixcount_tot = mean(gt_pixcount_tot, na.rm = T),
+            no_image = sum(no_image),
+            gt_pixcount_notstreets = mean(gt_pixcount_notstreets, na.rm = T),
+            ice_gt = mean(ice_gt, na.rm = T))
+
+# 8c Restrict to observations with NA poly_id (these were missing at least 1 hour)
+#    Note: All these obs will have an NA poly_id
+#          Obs with no_image == 0 are not actually dates missing 0 hours 
+#            because since summarizing was done on both date and poly_id, all
+#            the missing hours were grouped into the NA poly_id
+missing_hour_df <- traf_daily %>% filter(is.na(poly_id)) %>% 
+  group_by(no_image) %>% 
+  summarise(count = n())
+
+# 8d Create histogram of dates missing hours
+missing_hour_hist <- missing_hour_df %>% 
+  ggplot(aes(x = no_image, y = count)) +
+  geom_col() +
+  scale_x_continuous(breaks = seq(1,24,1),
+                     limits = c(0,25)) +
+  xlab("Number of Hours Missing Traffic Congestion Data") + ylab("Count of Dates") + 
+  theme_bw() +
+  theme(text = element_text(size = 10))
+missing_hour_hist
+
+# 3f Combine and save plot
+tiff(paste0(figure_path, 'figX_missingHourBarChart.tiff'),
+     units = "cm", width = 16, height = 9, res = 300)
+missing_hour_hist
+dev.off()
+
+
