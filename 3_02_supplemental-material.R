@@ -500,7 +500,7 @@ ggplot() +
   
 
 ####****************************************************
-#### 7: Plot: Histogram of Dates with Missing Hours #### 
+#### 8: Plot: Histogram of Dates with Missing Hours #### 
 ####****************************************************
 
 # 8a Load hourly dataset

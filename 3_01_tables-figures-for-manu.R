@@ -490,14 +490,18 @@ fig4_b
 # 5e Create x and y label variables for use in Grobs below
 xlab = 'Decrease in % Traffic Congestion from Pre-Pause Trend'
 ylab = 'Strata'
+a_label = 'A'
+b_label = 'B'
 
 # 5f Combine and save plot
 tiff(paste0(figure_path, 'fig4_ModResultsPlot_Main.tiff'),
      units = "cm", width = 16, height = 9, res = 300)
 patchwork_fig4 <- fig4_a + fig4_b
-patchwork_fig4 + plot_annotation(tag_levels = 'A')
+patchwork_fig4
 grid::grid.draw(grid::textGrob(xlab, x = 0.5,  y = 0.05, gp = grid::gpar(fontsize = 10)))
 grid::grid.draw(grid::textGrob(ylab, x = 0.03,  rot = 90, gp = grid::gpar(fontsize = 10)))
+grid::grid.draw(grid::textGrob(a_label, x = 0.105,  y = 0.84, gp = grid::gpar(fontsize = 11)))
+grid::grid.draw(grid::textGrob(b_label, x = 0.585,  y = 0.84, gp = grid::gpar(fontsize = 11)))
 dev.off()
 
 
@@ -580,17 +584,17 @@ fig5_b
 # 6e Create labelling variables for use in Grobs below
 xlab = 'Decrease in % Traffic Congestion from Pre-Pause Trend'
 ylab = 'Strata'
-ice_label = ': ICE'
-eji_label = ': EJI'
+ice_label = 'A: ICE'
+eji_label = 'B: EJI'
 
 # 6f Combine and save plot
 tiff(paste0(figure_path, 'fig5_ModResultsPlot_RushHour.tiff'),
      units = "cm", width = 16, height = 9, res = 300)
-fig5_a + fig5_b + plot_annotation(tag_levels = 'A')
+fig5_a + fig5_b
 grid::grid.draw(grid::textGrob(xlab, x = 0.5,  y = 0.05, gp = grid::gpar(fontsize = 10)))
 grid::grid.draw(grid::textGrob(ylab, x = 0.03,  rot = 90, gp = grid::gpar(fontsize = 10)))
-grid::grid.draw(grid::textGrob(ice_label, x = 0.075,  y = 0.936, gp = grid::gpar(fontsize = 11)))
-grid::grid.draw(grid::textGrob(eji_label, x = 0.561,  y = 0.936, gp = grid::gpar(fontsize = 11)))
+grid::grid.draw(grid::textGrob(ice_label, x = 0.13,  y = 0.84, gp = grid::gpar(fontsize = 11)))
+grid::grid.draw(grid::textGrob(eji_label, x = 0.61,  y = 0.84, gp = grid::gpar(fontsize = 11)))
 dev.off()
 
 
