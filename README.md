@@ -15,5 +15,5 @@ Level 3_ code corresponds to presentation steps.
 
 A note about data:
 Traffic data are not included in the raw data folder because of the prohibitively large
-size of the dataset. Similarly, processed data and model outputs are also not included 
+size of the dataset. Similarly, processed data, model outputs, figures and tables are also not included 
 because most files were too large for GitHub's size limit. 
