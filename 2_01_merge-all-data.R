@@ -17,16 +17,14 @@
 # 6: Add CT Centroids to Account for Spatial Autocorrelation
 # 7: Review Traffic Time Series
 
-
 ####**************
 #### N: Notes ####
 ####**************
 
 # Na Description
-# In this script we merge traffic data with EJI and ICE data. We also added 
+# In this script we merge traffic data with EJI and ICE data. We also add 
 # needed covariates to assess PAUSE using an ITS design, and variables to account
 # for spatial and temporal autocorrelation.
-
 
 ####********************
 #### 0: Preparation #### 
@@ -54,7 +52,6 @@ ice <- read_fst(paste0(data_path, 'ice_census_vars_2010CTs.fst'))
 # 0b.iv Load census tract shapefile for mapping
 tracts_sf <- st_read(polygons_of_interest_path) %>%  
   dplyr::select(geoid, geometry)
-
 
 ####*************************************
 #### 1: Merge and Assess Missingness #### 
@@ -112,7 +109,6 @@ traf_eji_ice %>%
 
 # 1d Save full dataset
 traf_eji_ice %>% write_rds(file = paste0(data_path, 'full_dataset.rds'))
-
 
 ####***********************************************
 #### 2: Aggregate to Daily Temporal Resolution #### 
@@ -216,7 +212,6 @@ traf_eji_ice_daily %>%
 # 2f Save full dataset
 traf_eji_ice_daily %>% write_rds(file = paste0(data_path, 'full_dataset_daily.rds'))
 
-
 ####***********************************************************
 #### 3: Aggregate to Daily Temporal Resolution w Rush Hour #### 
 ####***********************************************************
@@ -263,7 +258,6 @@ traf_eji_ice_daily_rh <- traf_eji_ice_daily_rh %>%
   left_join(ice, by = c('poly_id'))
 traf_eji_ice_daily_rh <- traf_eji_ice_daily_rh %>% 
   left_join(tracts_sf, by = c('poly_id' = 'geoid'))
-
 
 ####********************************************
 #### 4: Determine Quantiles for ICE and EJI #### 
@@ -341,7 +335,6 @@ strat_vars <- traf_eji_ice_daily %>%
 traf_eji_ice_daily_rh <- traf_eji_ice_daily_rh %>% 
   left_join(strat_vars, by = 'poly_id')
   
-
 ####******************************************
 #### 5: Add PAUSE Var and Time Covariates #### 
 ####******************************************  
@@ -382,7 +375,6 @@ traf_eji_ice_daily <- traf_eji_ice_daily %>%
 traf_eji_ice_daily_rh <- traf_eji_ice_daily_rh %>% 
   left_join(time_elapsed_df, by = 'date')
 
-
 ####****************************************************************
 #### 6: Add CT Centroids to Account for Spatial Autocorrelation #### 
 ####****************************************************************
@@ -406,7 +398,6 @@ traf_eji_ice_daily_rh <- traf_eji_ice_daily_rh %>% dplyr::select(-geometry) %>%
 # 6c Save dataset
 traf_eji_ice_daily %>% write_rds(file = paste0(data_path, 'full_dataset_wcovars_daily.rds'))
 traf_eji_ice_daily_rh %>% write_rds(file = paste0(data_path, 'full_dataset_wcovars+rushhour_daily.rds')) 
-
 
 ####***********************************
 #### 7: Review Traffic Time Series #### 

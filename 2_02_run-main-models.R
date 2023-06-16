@@ -1,7 +1,7 @@
 # Run Main Models
 # F31 Google Traffic COVID ITS Analysis
 # Jenni A. Shearston 
-# Updated 03/28/2023
+# Updated 06/16/2023
 
 ####***********************
 #### Table of Contents #### 
@@ -9,38 +9,31 @@
 
 # N: Notes
 # 0: Preparation 
-# 1: 
-
+# 1: Split, Filter & Nest Dataset
+# 2: Create Function for Running & Saving Models
+# 3: Run Models
+# 4: Model Evaluation
+# 5: Sensitivity Analysis Removing Traffic Vars from EJI
+# 6: Sensitivity Analyses Changing Tensor Term Knots
+# 7: Sensitivity Analysis Adjusting Each EJI Module by the Others
 
 ####**************
 #### N: Notes ####
 ####**************
 
+# STILL TO FOLLOW UP ON AS OF JUNE 16:
+# Follow up with Markus about weird traffic decrease in June-August 2018
+
 # Na Description
-# In this script we 
+# In this script we specify and run all models, including the main analysis,
+# secondary analyses, and sensitivity analyses. We also conduct some model
+# diagnostics and evaluation.
 
-###### OTHER MODELS TO RUN
-# secondary: effect modification by rush hour / not
-
-# sens: if MH doesn't know whats up with the wierd traffic period, remove that 
-# sens: adjust each module by continuous value of the other two modules (this 
-#       might be what we should do in the main analysis)
-# sens: removing traffic vars from eji
-# sens: play with knots on tensor term. not sure what range to assess - check w MAK
-#       4 and 2 (one knot per 2 miles)
-#       11 and 5
-#       16 and 8 (one knot per .5 miles) [do this for one strata]
-#       want to check for stability, but realizing that the few knots we have the 
-#       more we allow for confoudning and autocorellation, but the more knots we 
-#       have the more we are explaining away the effect of pause. so we want to
-#       see how much the results change
-
-# May be useful:
+# Nb Resources
 # Resource for adding autocorrelation structure to mixed model with nlme::lme
 # http://bbolker.github.io/mixedmodels-misc/ecostats_chap.html
 # short summary from stack exchange, which linked to B Bolker's github:
 # https://stackoverflow.com/questions/49796175/how-to-check-and-control-for-autocorrelation-in-a-mixed-effect-model-of-longitud
-
 
 ####********************
 #### 0: Preparation #### 
@@ -120,7 +113,6 @@ fullDataFS <- fullDataS %>%
 # 1d Clean environment
 rm(fullDataS.2, fullDataS.3, fullDataS.4, fullDataS.5, fullData_rh,
    fullDataS_rh, fullDataS.2_rh)
-
 
 ####****************************************************
 #### 2: Create Function for Running & Saving Models #### 
@@ -278,7 +270,6 @@ analyze_trafPause <- function(strata, dataForMod, outcome, analysis, outputPath)
   
 }
 
-
 ####*******************
 #### 3: Run Models #### 
 ####*******************
@@ -342,7 +333,6 @@ mod <- gamm4::gamm4(prop_maroon_red ~ pause + pause_end + time_elapsed
                     random = ~(1|poly_id), family = gaussian(), 
                     data = fullDataS$data[[1]])
 tictoc::toc()
-
 
 ####*************************
 #### 4: Model Evaluation #### 
@@ -452,7 +442,6 @@ mod_eji <- readr::read_rds(paste0(outputPath, model))
 gam.check(mod_eji$gam)
 mod_eji$mer
 
-
 ####************************************************************
 #### 5: Sensitivity Analysis Removing Traffic Vars from EJI #### 
 ####************************************************************
@@ -474,7 +463,6 @@ for(i in 1:length(fullDataS_EJInoTraf$strata)){
   print(fullDataS_EJInoTraf$strata[[i]])
 }
 tictoc::toc()
-
 
 ####********************************************************
 #### 6: Sensitivity Analyses Changing Tensor Term Knots #### 
@@ -542,7 +530,6 @@ tictoc::tic('Run 1 strata with 16 and 8 knots')
 analyze_trafPause(strata = fullDataS_forKnots$strata[[1]], dataForMod = fullDataS_forKnots$data[[1]], 
                     outcome = 'propMaroonRed', analysis = 'sensKnots16.8', outputPath = model_path)
 tictoc::toc()
-
 
 ####*********************************************************************
 #### 7: Sensitivity Analysis Adjusting Each EJI Module by the Others #### 
