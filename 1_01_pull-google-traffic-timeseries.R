@@ -1,7 +1,7 @@
 # Pull Google Traffic Timeseries
 # F31 Google Traffic COVID ITS Analysis
 # Jenni A. Shearston 
-# Updated 02/19/2023
+# Updated 06/16/2023
 
 ####***********************
 #### Table of Contents #### 
@@ -9,16 +9,19 @@
 
 # N: Notes
 # 0: Preparation 
-# 1: 
-
+# 1: Set Function Inputs
+# 2: Prepare Polygon and Raster Inputs
+# 3: Prepare Vectors of captured_datetimes of Interest
+# 4: Create Google Traffic Timeseries: Polygons
+# 5: Confirm Aggregation Through Stats and Mapping
 
 ####**************
 #### N: Notes ####
 ####**************
 
 # Na Description
-# In this script we 
-
+# In this script we convert Google Traffic images (rasters) into a csv of
+# traffic congestion colors aggregated to census tracts. 
 
 ####********************
 #### 0: Preparation #### 
