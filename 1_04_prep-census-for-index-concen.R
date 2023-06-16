@@ -15,15 +15,14 @@
 # 4: Map and review ICE vars
 # 5: Save out data
 
-
 ####**************
 #### N: Notes ####
 ####**************
 
 # Na Description
-# In this script we use census data to create two index of concentration at
+# In this script we use census data to create one index of concentration at
 # the extremes variables for a combination of race/ethnicity and household income
-# at the census tract level for NYC: (1) NH White vs Black, (2) NH White vs Asian
+# at the census tract level for NYC: (1) NH White & High income vs Black & Low income
 
 # Nb Index of Concentration at the Extremes Calculation
 # ICEi = (Ai-Pi)/Ti
@@ -49,7 +48,6 @@
 # Racialized Economic Segregation, Massachusetts (US), 1995-2010. J Urban Health. 
 # 2017;94(2):244-258.
 
-
 ####********************
 #### 0: Preparation #### 
 ####********************
@@ -70,7 +68,6 @@ polygons_of_interest_path = here::here('data', 'nyc_census_tracts', 'nycgeo_cens
 gt_fips <- read_rds(paste0(processed_data_path, 'gt_polyids_2010CTs.rds'))
 # 0d.ii Load census tracts geo file for mapping
 tracts <- st_read(polygons_of_interest_path)
-
 
 ####***********************************
 #### 1: Load and clean census data #### 
@@ -175,7 +172,6 @@ hhincome <- read_csv(paste0(census_data_path, "nhgis_income_tract_15-19.csv")) %
   mutate_at(vars(matches('_moe')), as.numeric) %>% 
   dplyr::select(fips_code, hhincome_all_est, hhincome_all_moe) 
 
-
 ####**************************************************************
 #### 2: Review race distributions in tracts with traffic data #### 
 ####**************************************************************
@@ -276,7 +272,6 @@ hisp_chloropleth_map_gtarea
 #        Cannot do an ICE variable with Hispanic folks because the census does
 #        not disaggregate household income by race+ethnicity (except for NH White)
 
-
 ####*****************************
 #### 3: Create ICE variables #### 
 ####*****************************
@@ -307,7 +302,6 @@ ice_hhincome_race <-
   merge(x = ice_hhincome_race, y = race[, c('fips_code', 'nhblack_race_est', 
                                             'nhwhite_race_est', 'all_race_est')], 
         by = 'fips_code', all.x = TRUE)
-
 
 ####********************************
 #### 4: Map and review ICE vars #### 
@@ -397,7 +391,6 @@ ice_hhincome_race %>% filter(poly_id %in% gt_fips) %>%
 mis <- ice_hhincome_race %>% 
   filter(poly_id %in% gt_fips) %>% 
   filter(is.na(ice_hhincome_bw) | is.na(ice_hhincome_aw))
-
 
 ####**********************
 #### 5: Save out data #### 

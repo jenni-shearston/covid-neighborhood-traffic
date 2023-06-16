@@ -14,7 +14,6 @@
 # 3: Map and review EJI vars
 # 4: Save out data
 
-
 ####**************
 #### N: Notes ####
 ####**************
@@ -37,7 +36,6 @@
 # If the EJI had been calculated using 2020 CTs, each of the sub-CTs from a single
 # 2010 CT may actually have been given different values. Therefore, for this 
 # analysis, we use traffic aggregated to 2010 census tracts
-
 
 ####********************
 #### 0: Preparation #### 
@@ -68,6 +66,7 @@ eji <- read_csv(paste0(raw_data_path, 'EJI_2022_NY.csv')) %>%
   mutate(geoid = as.character(geoid)) 
 
 # 0g Load 2010-->2020 CT crosswalk
+#    We chose not to use the 2020 CTs, so a crosswalk is no longer needed
 #    Note: the number of census tracts in NYC increased from 2,168 in 2010 to
 #          2,327 in 2020
 #          https://storymaps.arcgis.com/stories/d30850ba28944619b94e8ee4f746d5c4
@@ -79,7 +78,6 @@ eji <- read_csv(paste0(raw_data_path, 'EJI_2022_NY.csv')) %>%
 #   filter(countyfp == '005' | countyfp == '047' | countyfp == '061' | 
 #            countyfp == '081' | countyfp == '085') %>% 
 #   dplyr::select(tract10, tract20) %>% distinct()
-
 
 ####***********************************************************
 #### 1: Recalculate EJI with rankings based on NYC tracts  #### 
@@ -132,7 +130,6 @@ eji_nyc <- eji_nyc %>%
   mutate(spl_eji = rpl_ebm + rpl_svm + rpl_hvm,
          rpl_eji = percent_rank(spl_eji))
   
-
 ####***********************************************************
 #### 2: Recalculate EJI with traffic related vars removed  #### 
 ####***********************************************************
@@ -156,7 +153,6 @@ eji_nyc <- eji_nyc %>%
 eji_nyc <- eji_nyc %>% 
   mutate(spl_eji_sens = rpl_ebm_sens + rpl_svm + rpl_hvm,
          rpl_eji_sens = percent_rank(spl_eji_sens))
-
 
 ####********************************
 #### 3: Map and review EJI vars #### 
@@ -255,8 +251,7 @@ eji_nyc %>% filter(geoid %in% gt_fips) %>%
   ggplot() + geom_histogram(aes(x = rpl_eji_sens))
 
 # Notes: When using the NYC version there is greater variability (as to be expected),
-#        but the mean and median are still very similar. For both scores,
-#        tracts in the South Bronx have the highest env burden scores.
+#        but the mean and median are still very similar. 
 #        When using the modified EJI for NYC, the min decreases to 0.0005
 
 # 3e Determine correlation between EJI modules
@@ -267,7 +262,6 @@ eji_cors1 <- cor(eji_cors, method = c('spearman'), use = 'complete.obs')
 #    n = 8
 #    These are CTs that do not have some census data (see Script 1_04)
 CTs_mis_eji <- gt_fips[!gt_fips %in% eji_nyc$geoid]
-
 
 ####**********************
 #### 4: Save out data #### 

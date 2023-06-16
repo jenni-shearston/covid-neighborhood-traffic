@@ -15,20 +15,17 @@
 # 4: Evaluate correlations between traffic congestion measures
 # 5: Save out new traffic data
 
-
 ####**************
 #### N: Notes ####
 ####**************
 
 # Na Description
 # In this script, we first investigate missingness in the traffic data. Then, we 
-# create multiple measures of traffic at the census tract level.
+# create multiple measures of traffic at the census tract level and compare them.
 # We start with five measures of traffic, corresponding to the count of pixels assigned
-# to each congestion color code for each census tract (maroon, red, orange, green, grey).
-# Ultimately, we want to develop (1) a single measure of traffic for each census tract, and 
-# (2) traffic measure(s) that represent different components of exposure to traffic, such
-# as air pollution, noise, or severance.
-
+# to each congestion color code for each census tract (maroon, red, orange, green, grey),
+# and create different traffic and congestion metrics. Ultimately, we want to choose
+# a single measure of traffic for each census tract for use in the analyses.
 
 ####********************
 #### 0: Preparation #### 
@@ -76,7 +73,6 @@ traf_sf <- traf %>% left_join(tracts_sf, by = c('poly_id' = 'geoid'))
 
 # 0e Remove no longer needed objects
 rm(traf18, traf19, traf20)
-
 
 ####****************************
 #### 1: Review traffic data #### 
@@ -264,7 +260,6 @@ traf %>% filter(no_image == 'no image') %>%
   geom_vline(xintercept = ymd_hm('2020-03-22 00:00')) + 
   geom_vline(xintercept = ymd_hm('2020-06-08 00:00'), color = 'red')
 
-  
 ####**********************************************************************
 #### 2: Restrict to sampled census tracts not on edge of capture area #### 
 ####**********************************************************************
@@ -300,7 +295,6 @@ traf %>% left_join(tracts_sf, by = c('poly_id' = 'geoid')) %>%
 #       n = 10,641,453 observations: 
 #       ((26301 possible datetimes - 2393 missing datetimes) 
 #       * 445 CTs) + 2393 missing datetimes
-
 
 ####*******************************************
 #### 3: Create traffic congestion measures #### 
@@ -394,7 +388,6 @@ traf %>% ggplot(aes(x = ice_gt)) + geom_histogram() +
   geom_vline(aes(xintercept = mean(ice_gt, na.rm = T)))  # normal
 traf %>% ggplot(aes(x = congest)) + geom_bar()
 
-
 ####******************************************************************
 #### 4: Evaluate correlations between traffic congestion measures #### 
 ####******************************************************************
@@ -436,7 +429,6 @@ traf_scatter %>% ggplot(aes(x = prop_green, y = gt_value)) + geom_point(shape = 
   geom_smooth() + facet_wrap(~ gt_color) + ggtitle('prop_green')
 traf_scatter %>% ggplot(aes(x = prop_maroon_red, y = gt_value)) + geom_point(shape = 1) +
   geom_smooth() + facet_wrap(~ gt_color) + ggtitle('prop_maroon_red')
-
 
 ####**********************************
 #### 5: Save out new traffic data #### 
