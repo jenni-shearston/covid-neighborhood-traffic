@@ -9,8 +9,14 @@
 
 # N: Notes
 # 0: Preparation 
-# 1: 
-
+# 1: Prepare Map of EJI Module Tertiles
+# 2: Plot: Sens Analyses Changing Tensor Term Knots
+# 3: Plot: Sens Analyses Remove Traffic Vars from EJI
+# 4: Plot: Sens Analyses Adjust EJI Mods for Each Other
+# 5: Table: 5x5 Showing Census Tract Overlap Between EJI/ICE Quintiles
+# 6: Plot: Traffic Congestion Pre/Post Pause Cut into Deciles
+# 7: Plot: Histograms of CT/Date Traffic Correlation Tensor Term Knots
+# 8: Plot: Histogram of Dates with Missing Hours
 
 ####**************
 #### N: Notes ####
@@ -27,7 +33,6 @@
 #       to the most burdened group, while lower values correspond to the least
 #       burdened group. For display purposes only, (3_01) the quantiles of EJI will
 #       be reversed so that Q1 corresponds to the most burdened group.
-
 
 ####********************
 #### 0: Preparation #### 
@@ -52,12 +57,11 @@ mod_results <- read_csv(paste0(model_path, 'model_results_table.csv'))
 load(here::here('data', 'needed_for_gt_to_polygons_function', 'gt_extent.RData'))
 inset <- jpeg::readJPEG(paste0(figure_path, 'nyc_inset.jpeg'), native = T)
 
-
 ####*******************************************
 #### 1: Prepare Map of EJI Module Tertiles #### 
 ####*******************************************
 
-# 1a Prepare chloropleth map of EJI tertiles
+# 1a Prepare choropleth map of EJI tertiles
 ejiModuleTertsMap <- 
   fullData %>% 
   dplyr::select(poly_id, eji_ebm_3, eji_svm_3, eji_hvm_3, date) %>% 
@@ -86,7 +90,6 @@ tiff(paste0(figure_path, 'figX_ejiModuleChlorMap.tiff'),
      units = "cm", width = 16, height = 9, res = 300)
 ejiModuleTertsMap
 dev.off()
-
 
 ####*******************************************************
 #### 2: Plot: Sens Analyses Changing Tensor Term Knots #### 
@@ -165,7 +168,6 @@ tiff(paste0(figure_path, 'figX_sensKnotsPlot.tiff'),
 sensKnots
 dev.off()
 
-
 ####*********************************************************
 #### 3: Plot: Sens Analyses Remove Traffic Vars from EJI #### 
 ####*********************************************************
@@ -234,7 +236,6 @@ tiff(paste0(figure_path, 'figX_sensEJInoTrafPlot.tiff'),
      units = "cm", width = 16, height = 9, res = 300)
 sensEJItraf
 dev.off()
-
 
 ####***********************************************************
 #### 4: Plot: Sens Analyses Adjust EJI Mods for Each Other #### 
@@ -316,7 +317,6 @@ tiff(paste0(figure_path, 'figX_sensEjiModsAdjusted.tiff'),
 ejiModsAdjusted
 dev.off()
 
-
 ####**************************************************************************
 #### 5: Table: 5x5 Showing Census Tract Overlap Between EJI/ICE Quintiles #### 
 ####**************************************************************************
@@ -345,7 +345,6 @@ cor_df <- fullData %>% group_by(poly_id) %>%
             ice_hhincome_bw = first(ice_hhincome_bw)) 
 # 5c.ii Run correlation
 cor(cor_df$rpl_eji, cor_df$ice_hhincome_bw, method = c('pearson'), use = 'complete.obs')
-
 
 ####*****************************************************************
 #### 6: Plot: Traffic Congestion Pre/Post Pause Cut into Deciles #### 
@@ -423,7 +422,6 @@ tiff(paste0(figure_path, 'figX_DecilePrePostPauseChoroMap.tiff'),
 dec_prePost_map_a + dec_prePost_map_b
 dev.off()
 
-
 ####**************************************************************************
 #### 7: Plot: Histograms of CT/Date Traffic Correlation Tensor Term Knots #### 
 ####**************************************************************************
@@ -439,6 +437,8 @@ dev.off()
 # We run the correlations and histograms for one of most clustered strata (ICE Q1)
 # for both the data and the residuals of the model with the lowest tensor term knot
 # values
+
+# This is a sanity check, and is not included in the supplemental material.
 
 #***************** Original data
 
@@ -498,7 +498,6 @@ cor_iceQ1_resids2 <- cor(corDF_iceQ1_resids2, use = 'complete.obs')
 ggplot() +
   geom_histogram(aes(x = cor_iceQ1_resids2))
   
-
 ####****************************************************
 #### 8: Plot: Histogram of Dates with Missing Hours #### 
 ####****************************************************
@@ -550,7 +549,7 @@ missing_hour_hist <- missing_hour_df %>%
   theme(text = element_text(size = 10))
 missing_hour_hist
 
-# 3f Combine and save plot
+# 8e Combine and save plot
 tiff(paste0(figure_path, 'figX_missingHourBarChart.tiff'),
      units = "cm", width = 16, height = 9, res = 300)
 missing_hour_hist

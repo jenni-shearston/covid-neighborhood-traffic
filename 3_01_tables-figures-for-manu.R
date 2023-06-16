@@ -14,8 +14,7 @@
 # 3: Prepare Choropleth EJI / ICE Map
 # 4: Prepare Time Series Plot
 # 5: Prepare Model Results Grouped Bar Chart
-# 6: Prepare Model Results Forest Plot w Rush Hour Stratification
-
+# 6: Prepare Model Results Bar Chart w Rush Hour Stratification
 
 ####**************
 #### N: Notes ####
@@ -33,7 +32,6 @@
 #       to the most burdened group, while lower values correspond to the least
 #       burdened group. For display purposes only, (3_01) the quantiles of EJI will
 #       be reversed so that Q1 corresponds to the most burdened group.
-
 
 ####********************
 #### 0: Preparation #### 
@@ -75,7 +73,6 @@ ggplot() +
 dev.off()
 # 0e.iii Load new map as jpeg
 inset <- jpeg::readJPEG(paste0(figure_path, 'nyc_inset.jpeg'), native = T)
-
 
 ####*********************************************************
 #### 1: Prepare Descriptive Table for EJI/ICE Strata CTs #### 
@@ -188,7 +185,6 @@ t1_traf <- fullDataS %>%
                 mean_prop_maroon_red_recovery, sd_prop_maroon_red_recovery) %>% 
   arrange(strata_label_ejiFlipped)
 
-
 ####******************************************************
 #### 2: Prepare Choropleth Traffic Pre/Post Pause Map #### 
 ####******************************************************
@@ -254,12 +250,11 @@ tiff(paste0(figure_path, 'fig1_PrePostPauseChoroMap.tiff'),
 plot_grid(fig1_a, fig1_b)
 dev.off()
 
-
 ####*****************************************
 #### 3: Prepare Choropleth EJI / ICE Map #### 
 ####*****************************************
 
-# Two-panel chloropleth map showing ICE as one panel and EJI as the other
+# Two-panel choropleth map showing ICE as one panel and EJI as the other
 # We filter to a single day only for computation efficiency; ICE and EJI are 
 # the same no matter what day is selected.
 
@@ -311,12 +306,11 @@ patchwork_fig2 <- fig2_a + fig2_b
 patchwork_fig2 + plot_annotation(tag_levels = 'A')
 dev.off()
 
-
 ####*********************************
 #### 4: Prepare Time Series Plot #### 
 ####*********************************
 
-# One panel time series plot with EJI and ICE quintiles specified in color
+# Two panel time series plot with EJI and ICE quintiles specified in color
 
 # 4a Create function to aggregate traffic data (otherwise plot takes a long
 #    time to load because of all the CTs for each date)
@@ -380,15 +374,13 @@ tiff(paste0(figure_path, 'fig3_TrafficTimeseriesPlot.tiff'),
 fig3
 dev.off()
 
-
 ####************************************************
 #### 5: Prepare Model Results Grouped Bar Chart #### 
 ####************************************************
 
-# Multi-panel grouped bar chart showing model results for main EJI and ICE
-# analyses and secondary EJI module analyses. Quintiles/tertiles are grouped
-# together and differentiated by color and effect estimates for Pause and 
-# Recovery period are faceted out separately.
+# Multi-panel grouped bar chart showing model results for main ICE and EJI
+# analyses and secondary EJI module analyses. Each metric or domain is a different
+# facet and effect estimates for Pause and Recovery period are differentiated by color.
 
 # 5a Clean strata names & add any needed vars for plotting
 mod_results1 <- mod_results %>% 
@@ -470,7 +462,7 @@ fig4_a <- mod_results1 %>%
         axis.text.y = element_text(size = 10))
 fig4_a
 
-# 5d Create forest plot of model results for EJI modules
+# 5d Create bar chart of model results for EJI sub-modules
 fig4_b <- mod_results1 %>% 
   filter(Analysis == 'EJI Modules') %>%
   ggplot(aes(y = tertile_label, x = coef, xmin = lci, xmax = uci,
@@ -504,10 +496,9 @@ grid::grid.draw(grid::textGrob(a_label, x = 0.105,  y = 0.84, gp = grid::gpar(fo
 grid::grid.draw(grid::textGrob(b_label, x = 0.585,  y = 0.84, gp = grid::gpar(fontsize = 11)))
 dev.off()
 
-
-####*********************************************************************
-#### 6: Prepare Model Results Forest Plot w Rush Hour Stratification #### 
-####*********************************************************************
+####*******************************************************************
+#### 6: Prepare Model Results Bar Chart w Rush Hour Stratification #### 
+####*******************************************************************
 
 # 6a Clean strata names for plotting
 mod_results2 <- mod_results %>% 
