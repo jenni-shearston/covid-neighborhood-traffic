@@ -21,7 +21,7 @@
 
 # Na Description
 # In this script we use census data to create one index of concentration at
-# the extremes variables for a combination of race/ethnicity and household income
+# the extremes variable for a combination of race/ethnicity and household income
 # at the census tract level for NYC: (1) NH White & High income vs Black & Low income
 
 # Nb Index of Concentration at the Extremes Calculation
@@ -46,7 +46,7 @@
 # City-Level Measures with Fatal and Non-Fatal Assaults (Total and Firearm Related), 
 # Using the Index of Concentration at the Extremes (ICE) for Racial, Economic, and 
 # Racialized Economic Segregation, Massachusetts (US), 1995-2010. J Urban Health. 
-# 2017;94(2):244-258.
+# 2017;94(2):244-258. DOI: 10.1007/s11524-016-0116-z; PMCID: PMC5391325; PMID: 28130678
 
 ####********************
 #### 0: Preparation #### 
@@ -262,7 +262,7 @@ hisp_chloropleth_map_gtarea <- hisp_chloropleth %>%
 hisp_chloropleth_map_gtarea
 
 # Notes: There is considerable overlap between tracts with a high proportion of 
-#        Hispanic people and tracts with a high proportion of Black people
+#        Hispanic people and tracts with a high proportion of Black people.
 #        Racial groups with substantial census tract level populations are mostly
 #        NH White, NH Black, and Hispanic. There are less tracts with a larger 
 #        proportion of Asian people, but still a decent amount. 

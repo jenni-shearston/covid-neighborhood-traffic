@@ -96,6 +96,7 @@ eji_nyc <- eji_nyc %>%
   mutate_at(vars(starts_with(c('ep_', 'e_'))), list(epl = percent_rank))
 
 # 1c Identify tracts with greater than 0.6666 percentile rank of health conditions
+#    Note: 66.66% is the value used in EJI
 eji_nyc <- eji_nyc %>% 
   mutate(f_bphigh = ifelse(ep_bphigh_epl > 0.6666, 1, 0),
          f_asthma = ifelse(ep_asthma_epl > 0.6666, 1, 0),

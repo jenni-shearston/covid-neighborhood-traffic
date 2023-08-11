@@ -42,14 +42,14 @@ data_path <- paste0(project.folder, 'data/processed_data/')
 polygons_of_interest_path = here::here('data', 'nyc_census_tracts', 'nycgeo_census_tracts.shp')
 
 # 0d Load data
-# 0b.i Load traffic data
+# 0d.i Load traffic data
 #      Note: 445 census tracts
 traf <- read_fst(paste0(data_path, 'gt18-20_2010CTs.fst'))
-# 0b.ii Load EJI data
+# 0d.ii Load EJI data
 eji <- read_fst(paste0(data_path, 'eji_nyc.fst'))
-# 0b.iii Load ICE census data
+# 0d.iii Load ICE census data
 ice <- read_fst(paste0(data_path, 'ice_census_vars_2010CTs.fst'))
-# 0b.iv Load census tract shapefile for mapping
+# 0d.iv Load census tract shapefile for mapping
 tracts_sf <- st_read(polygons_of_interest_path) %>%  
   dplyr::select(geoid, geometry)
 
@@ -107,6 +107,15 @@ traf_eji_ice %>%
   theme(panel.grid = element_line(color = "transparent"),
         text = element_text(size = 16))
 
+# 1d Create warning variable to indicate if gt_pixcount_tot is equal to 
+#    gt_pixcount_notsampled because this indicates all CCC vars should be NA
+#    Note: This issue was caught at the end of analysis, and will be fixed
+#          for future iterations of the functions used in script 1_01. As
+#          this issue was caught right before manuscript submission, we will
+#          flag it here and correct it in the daily aggregated datasets only.
+traf_eji_ice <- traf_eji_ice %>% 
+  mutate(warning_CCC_should_be_NA = ifelse(gt_pixcount_notsampled == gt_pixcount_tot, 1, 0))
+
 # 1d Save full dataset
 traf_eji_ice %>% write_rds(file = paste0(data_path, 'full_dataset.rds'))
 
@@ -125,7 +134,10 @@ traf_eji_ice %>% write_rds(file = paste0(data_path, 'full_dataset.rds'))
 #          could not be assigned a poly_id in script 1_01
 traf_daily <- traf %>% 
   mutate(date = date(captured_datetime),
-         no_image = as.numeric(ifelse(no_image == 'no image', 1, 0))) %>% 
+         no_image = as.numeric(ifelse(no_image == 'no image', 1, 0)),
+         warning_CCC_should_be_NA = ifelse(gt_pixcount_notsampled == gt_pixcount_tot, 1, 0),
+         prop_maroon_red = ifelse(warning_CCC_should_be_NA == 1, NA, prop_maroon_red)
+         ) %>% 
   group_by(poly_id, date) %>% 
   summarise(speed_reduct_fact = mean(speed_reduct_fact, na.rm = T),
             green_gray_85 = mean(green_gray_85, na.rm = T),
@@ -144,10 +156,16 @@ traf_daily <- traf %>%
             gt_pixcount_tot = mean(gt_pixcount_tot, na.rm = T),
             no_image = sum(no_image),
             gt_pixcount_notstreets = mean(gt_pixcount_notstreets, na.rm = T),
-            ice_gt = mean(ice_gt, na.rm = T))
+            ice_gt = mean(ice_gt, na.rm = T),
+            num_hours_wNotSampEqTot = sum(warning_CCC_should_be_NA))
 
 # 2b Explore missing dates & remove observations with an NA poly_id if
 #    the date is missing all 24 hours of traffic data
+#    Note: We also confirm that dates missing 19 or more hours from full map download 
+#          failure (no_image) also do not have 5 missing hours from partial map download,
+#          failure (num_hours_wNotSampEqTot) which would push those dates with those 
+#          additional census tracts missing up to 24 hours of missing traffic data. 
+#          The dates do not overlap.
 #    Note: We want to have a case complete dataset where every date is represented,
 #          even if the date has no traffic data due to missing images for all 24 hours.
 #          Currently, if a date was missing any number of hours, it has an observation 
@@ -157,6 +175,8 @@ traf_daily <- traf %>%
 #            ((1,096 possible dates - 74 dates missing all 24 hours) 
 #            * 445 CTs) + 74 dates missing all 24 hours
 table(traf_daily$no_image, useNA = 'always')
+a <- traf_daily %>% filter(no_image == 19 | no_image == 20 | no_image == 22) # filter to dates missing 19+ hours
+b <- traf_daily %>% filter(num_hours_wNotSampEqTot == 5) # filter to dates with 5 missing hours
 traf_daily2 <- traf_daily %>% mutate(remove = ifelse(is.na(poly_id) & no_image < 24, 1, 0)) %>% 
   filter(remove == 0) 
 
@@ -227,7 +247,10 @@ traf_rh <- traf %>%
          no_image = as.numeric(ifelse(no_image == 'no image', 1, 0)),
          hour = hour(captured_datetime),
          dow = wday(captured_datetime, week_start = getOption("lubridate.week.start", 1)),
-         rush_hour = ifelse(hour > 5 & hour < 11 & dow < 6 | hour > 15 & hour < 21 & dow < 6 , 1, 0))
+         rush_hour = ifelse(hour > 5 & hour < 11 & dow < 6 | hour > 15 & hour < 21 & dow < 6 , 1, 0),
+         warning_CCC_should_be_NA = ifelse(gt_pixcount_notsampled == gt_pixcount_tot, 1, 0),
+         prop_maroon_red = ifelse(warning_CCC_should_be_NA == 1, NA, prop_maroon_red)
+         )
 
 # 3b Aggregate to day/rush-hour temporal resolution
 traf_rh <- traf_rh %>% 
@@ -249,7 +272,9 @@ traf_rh <- traf_rh %>%
             gt_pixcount_tot = mean(gt_pixcount_tot, na.rm = T),
             no_image = sum(no_image),
             gt_pixcount_notstreets = mean(gt_pixcount_notstreets, na.rm = T),
-            ice_gt = mean(ice_gt, na.rm = T)) %>% ungroup()
+            ice_gt = mean(ice_gt, na.rm = T),
+            num_hours_wNotSampEqTot = sum(warning_CCC_should_be_NA)
+            ) %>% ungroup()
 
 #3c Merge data
 traf_eji_ice_daily_rh <- traf_rh %>% 

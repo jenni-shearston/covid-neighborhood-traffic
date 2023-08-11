@@ -185,6 +185,15 @@ t1_traf <- fullDataS %>%
                 mean_prop_maroon_red_recovery, sd_prop_maroon_red_recovery) %>% 
   arrange(strata_label_ejiFlipped)
 
+# 1i Calculate total mean and SD of traffic congestion during study period
+total_traf <- fullData %>% ungroup() %>% 
+  summarise(mean_propMaroonRed = round(mean(prop_maroon_red, na.rm = T), digits = 1),
+            sd_propMaroonRed = round(sd(prop_maroon_red, na.rm = T), digits = 1))
+
+# 1j Calculate mean and SD of traffic congestion by Pause periods for all 
+#    quintiles combined
+traf_by_pause <- aggTrafByPause(fullData)
+
 ####******************************************************
 #### 2: Prepare Choropleth Traffic Pre/Post Pause Map #### 
 ####******************************************************
@@ -247,7 +256,7 @@ fig1_b
 # 2d Combine panels into one plot and save
 tiff(paste0(figure_path, 'fig1_PrePostPauseChoroMap.tiff'),
      units = "cm", width = 16, height = 9, res = 300)
-plot_grid(fig1_a, fig1_b)
+cowplot::plot_grid(fig1_a, fig1_b)
 dev.off()
 
 ####*****************************************
@@ -274,8 +283,8 @@ fig2_a <-
   scale_fill_viridis(name = 'Index of Concentration\nat the Extremes', 
                      option = 'rocket',
                      discrete = T,
-                     labels = c('Q1 (Disadvantaged)', 'Q2', 'Q3', 'Q4',
-                                'Q5 (Privileged)', 'Not Enough Pop.')) +
+                     labels = c('Q1 (Greater Disadvantage)', 'Q2', 'Q3', 'Q4',
+                                'Q5 (Lesser Disadvantage)', 'Not Enough Pop.')) +
   theme_void() +
   theme(panel.grid = element_line(color = "transparent"),
         text = element_text(size = 10))
@@ -292,8 +301,8 @@ fig2_b <-
   scale_fill_viridis(name = 'Environmental\nJustice Index', 
                      option = 'mako',
                      discrete = T,
-                     labels = c('Q1 (High Burden)', 'Q2', 'Q3', 'Q4', 
-                                'Q5 (Low Burden)', 'Not Enough Data')) +
+                     labels = c('Q1 (Greater Burden)', 'Q2', 'Q3', 'Q4', 
+                                'Q5 (Lesser Burden)', 'Not Enough Data')) +
   theme_void() +
   theme(panel.grid = element_line(color = "transparent"),
         text = element_text(size = 10))
@@ -353,11 +362,11 @@ fig3 <- f3_traf_strata %>%
   geom_line(alpha = 0.25) +
   geom_vline(aes(xintercept = ymd("2020-03-22")), color = "black",
              linetype = "dashed") +
-  annotate('text', x = ymd('2020-03-10'), y = 23, label = 'Pause\nBegins', 
+  annotate('text', x = ymd('2020-03-10'), y = 30, label = 'Pause\nBegins', 
            size = 8/.pt, fontface = 2, hjust = 1) +
   geom_vline(aes(xintercept = ymd('2020-06-08')), color = 'blue',
              linetype = 'dashed') +
-  annotate('text', x = ymd('2020-06-20'), y = 23, label = 'Recovery\nBegins', 
+  annotate('text', x = ymd('2020-06-20'), y = 30, label = 'Recovery\nBegins', 
            size = 8/.pt, fontface = 2, hjust = 0, color = 'blue') +
   geom_smooth(aes(color = strata_label, linetype = strata_label)) +
   scale_color_manual(values = combo_palette, name = '') + 

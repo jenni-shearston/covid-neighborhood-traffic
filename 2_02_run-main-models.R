@@ -442,6 +442,26 @@ mod_eji <- readr::read_rds(paste0(outputPath, model))
 gam.check(mod_eji$gam)
 mod_eji$mer
 
+# 4m Compute Moran's I on residuals for one strata of EJI and ICE each
+# 4m.i Load models & sf of census tracts
+mod_ice <- readr::read_rds(paste0(model_path, 'iceHhincomeBwQ2_propMaroonRed_includeRecovery.rds'))
+mod_eji <- readr::read_rds(paste0(model_path, 'ejiQ1_propMaroonRed_includeRecovery.rds')) 
+tracts_sf <- st_read(here::here('data', 'nyc_census_tracts', 'nycgeo_census_tracts.shp'))
+# 4m.ii Create dataframes for moran's I test
+mod_iceD <- tracts_sf %>% 
+  right_join(fullDataS$data[[1]], by = c('geoid' = 'poly_id')) %>% ungroup() %>% 
+  mutate(fitted = mod_ice$gam$fitted.values,
+         resids = mod_ice$gam$residuals,
+         resids_scaled = scale(resids))
+# 4m.iii Define weights matrix - Queens contiguity
+poly_weights <- spdep::poly2nb(tracts_sf, queen = TRUE)
+#iceD_weights <- spdep::poly2nb(mod_iceD, queen = TRUE)
+# 4m.iv Assign weights to the neighbors
+poly_assigned_weights <- spdep::nb2listw(poly_weights, style="W", zero.policy=TRUE)
+#iceD_assigned_weights <- spdep::nb2listw(iceD_weights, style="W", zero.policy=TRUE)
+# 4m.v Calculate Moran's I w Monte Carlo method for p-value testing
+moran_iceD <- spdep::moran.mc(mod_iceD$resids, poly_assigned_weights, nsim = 999, alternative = "greater")
+
 ####************************************************************
 #### 5: Sensitivity Analysis Removing Traffic Vars from EJI #### 
 ####************************************************************

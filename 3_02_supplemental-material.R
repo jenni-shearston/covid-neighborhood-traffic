@@ -1,7 +1,7 @@
 # Supplemental Material for Manuscript
 # F31 Google Traffic COVID ITS Analysis
 # Jenni A. Shearston 
-# Updated 04/11/2023
+# Updated 08/11/2023
 
 ####***********************
 #### Table of Contents #### 
@@ -17,13 +17,14 @@
 # 6: Plot: Traffic Congestion Pre/Post Pause Cut into Deciles
 # 7: Plot: Histograms of CT/Date Traffic Correlation Tensor Term Knots
 # 8: Plot: Histogram of Dates with Missing Hours
+# 9: Evaluate Num Days Missing for Each CT
 
 ####**************
 #### N: Notes ####
 ####**************
 
 # Na Description
-# In this script we 
+# In this script we create supplemental plots / tables. 
 
 # A note about ICE and EJI quantiles
 #       All quantiles are calculated such that Q1 corresponds to the lower values,
@@ -31,7 +32,7 @@
 #       correspond to the most privileged group, while lower values correspond to
 #       the most disadvantaged group. In contrast for EJI, higher values correspond
 #       to the most burdened group, while lower values correspond to the least
-#       burdened group. For display purposes only, (3_01) the quantiles of EJI will
+#       burdened group. For display purposes only, (3_02) the quantiles of EJI will
 #       be reversed so that Q1 corresponds to the most burdened group.
 
 ####********************
@@ -78,8 +79,8 @@ ejiModuleTertsMap <-
   scale_fill_viridis(name = 'Environmental \n Justice Index',
                      option = 'cividis',
                      discrete = T,
-                     labels = c('T1 (High Burden)', 'T2',
-                                'T3 (Low Burden)', 'Not Enough Data')) +
+                     labels = c('T1 (Greater Burden)', 'T2',
+                                'T3 (Lesser Burden)', 'Not Enough Data')) +
   theme_void() +
   theme(panel.grid = element_line(color = "transparent"),
         text = element_text(size = 16))
@@ -162,7 +163,7 @@ sensKnots <- mod_results3 %>%
   theme(text = element_text(size = 10))
 sensKnots
 
-# 2f Combine and save plot
+# 2f Save plot
 tiff(paste0(figure_path, 'figX_sensKnotsPlot.tiff'),
      units = "cm", width = 16, height = 9, res = 300)
 sensKnots
@@ -213,7 +214,7 @@ mod_results4 <- mod_results4 %>%
 
 # 3d Create vectors for y-axis breaks and labels
 breaks4sensEJItraf <- c(0,3,6,9,12)
-labels4sensEJItraf <- c('Q5 (Low Burden)', 'Q4', 'Q3', 'Q2', 'Q1 (High Burden)')
+labels4sensEJItraf <- c('Q5 (Lesser Burden)', 'Q4', 'Q3', 'Q2', 'Q1 (Greater Burden)')
 
 # 3e Create forest plot of rush hour results
 sensEJItraf <- mod_results4 %>% 
@@ -554,5 +555,53 @@ tiff(paste0(figure_path, 'figX_missingHourBarChart.tiff'),
      units = "cm", width = 16, height = 9, res = 300)
 missing_hour_hist
 dev.off()
+
+
+####**********************************************
+#### 9: Evaluate Num Days Missing for Each CT #### 
+####**********************************************
+
+# Not a figure, done for analytic purposes.
+
+# 9a Load hourly dataset
+traf <- read_fst(paste0(data_path, 'gt18-20_2010CTs.fst'))
+
+# 9b Aggregate to daily
+traf_daily <- traf %>% 
+  mutate(date = date(captured_datetime),
+         no_image = as.numeric(ifelse(no_image == 'no image', 1, 0)),
+         missing_CCC_data = ifelse(gt_pixcount_notsampled == gt_pixcount_tot, 1, 0)) %>% 
+  group_by(poly_id, date) %>% 
+  summarise(speed_reduct_fact = mean(speed_reduct_fact, na.rm = T),
+            green_gray_85 = mean(green_gray_85, na.rm = T),
+            gt_pixcount_streets = mean(gt_pixcount_streets, na.rm = T),
+            prop_maroon_red = mean(prop_maroon_red, na.rm = T),
+            prop_green = mean(prop_green, na.rm = T),
+            gt_pixcount_maroon = mean(gt_pixcount_maroon, na.rm = T),
+            gt_pixcount_red = mean(gt_pixcount_red, na.rm = T),
+            gt_pixcount_orange = mean(gt_pixcount_orange, na.rm = T),
+            gt_pixcount_green = mean(gt_pixcount_green, na.rm = T),
+            gt_pixcount_gray = mean(gt_pixcount_gray, na.rm = T),
+            gt_pixcount_construction = mean(gt_pixcount_construction, na.rm = T),
+            gt_pixcount_emergency = mean(gt_pixcount_emergency, na.rm = T),
+            gt_pixcount_notsampled = mean(gt_pixcount_notsampled, na.rm = T),
+            gt_pixcount_background = mean(gt_pixcount_background, na.rm = T),
+            gt_pixcount_tot = mean(gt_pixcount_tot, na.rm = T),
+            no_image = sum(no_image),
+            gt_pixcount_notstreets = mean(gt_pixcount_notstreets, na.rm = T),
+            ice_gt = mean(ice_gt, na.rm = T),
+            num_hours_missing_CCC_data = sum(missing_CCC_data, na.rm = T))
+
+# 9c Review number of date/CT obs that have had missing CCC data
+table(traf_daily$num_hours_missing_CCC_data)
+
+# 9c Count number observations and number observations missing congestion data by CT
+traf_daily_byCT <- traf_daily %>% 
+  group_by(poly_id) %>% 
+  summarise(dates = n())
+
+# 9d Review counts
+table(traf_daily_byCT$dates)
+
 
 

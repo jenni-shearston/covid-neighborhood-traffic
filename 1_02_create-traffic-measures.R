@@ -32,7 +32,7 @@
 ####********************
 
 # 0a Declare root directory
-project.folder <- paste0(print(here::here()),'/')
+project.folder <- paste0(here::here(),'/')
 
 # 0b Load packages & passwords
 source(paste0(project.folder, 'packages.R'))
@@ -45,22 +45,23 @@ polygons_of_interest_path = here::here('data', 'nyc_census_tracts', 'nycgeo_cens
 extent_path = here::here('data', 'needed_for_gt_to_polygons_function', 'gt_extent.RData')
 gt_dir = '/Users/jennishearston/Dropbox/JENNI_F31_DATA'
 
-# 0b Load data
-# 0b.i Load traffic data
+# 0d Load data
+# 0d.i Load traffic data
 #      Note: 634 census tracts
 traf18 <- read_fst(paste0(data_path, 'gt2018_2010CTs.fst'))
 traf19 <- read_fst(paste0(data_path, 'gt2019_2010CTs.fst')) 
 traf20 <- read_fst(paste0(data_path, 'gt2020_2010CTs.fst')) 
-# 0b.ii Load census tract sf file
+# 0d.ii Load census tract sf file
 tracts_sf <- st_read(polygons_of_interest_path)
-# 0b.iii Load gt capture area extent
+# 0d.iii Load gt capture area extent
 load(extent_path)
-# 0b.iv Load street network image and poly_matrix from script 1_01
+# 0d.iv Load street network image and poly_matrix from script 1_01
+#       Note: Will be used to create a road pixels variable
 streets_matrix <- png::readPNG(here::here(gt_dir, 'gt_street_network.png'))
 poly_matrix <- readRDS(file = here::here('data', 'needed_for_gt_to_polygons_function', 
                                          'poly_matrix_nyc_2010CTs.rds'))
 
-# 0c Merge three years of traffic data & add var for datetimes missing traffic image
+# 0e Merge three years of traffic data & add var for datetimes missing traffic image
 #    Remove duplicate rows for when Daylight Savings Time ends
 traf<- traf18 %>% bind_rows(traf19) %>% bind_rows(traf20) %>% 
   distinct() %>% 
@@ -68,10 +69,10 @@ traf<- traf18 %>% bind_rows(traf19) %>% bind_rows(traf20) %>%
          captured_datetime = mdy_hm(captured_datetime, tz = 'America/New_York'),
          no_image = ifelse(is.na(poly_id) & is.na(gt_pixcount_tot), 'no image', 'image')) 
 
-# 0d Merge traffic data with sf of tract boundaries for visualization
+# 0f Merge traffic data with sf of tract boundaries for visualization
 traf_sf <- traf %>% left_join(tracts_sf, by = c('poly_id' = 'geoid'))
 
-# 0e Remove no longer needed objects
+# 0g Remove no longer needed objects
 rm(traf18, traf19, traf20)
 
 ####****************************
@@ -96,7 +97,7 @@ trafDates <- unique(traf$captured_datetime)
 # 1b.iii Pull datetimes not present in traffic
 #    Notes: The three missing dates are the EDT instances of 1 am when the 
 #           transition from EDT to EST happened (ending of Daylight Savings)
-#           It makes since they are missing, since when we reformat the datetime 
+#           It makes sense they are missing, since when we reformat the datetime 
 #           to match the filenames of the traffic images, we use the hour function
 #           which creates an integer and does not keep timezones. So only one 1 am
 #           hour would have been created in the reformatted datetime vector. This
@@ -153,7 +154,7 @@ ctOut_vec <- ctOut_vec[!ctOut_vec %in% c('36061000700', '36061029700',
 # 1f Create vector of CTs fully inside capture area (n = 565)
 ctIn_vec <- ctOrig_vec[!ctOrig_vec %in% ctOut_vec]
 
-# 1g Determine numb and prop of census tracts that have 100% coverage, 95%, 90%,
+# 1g Determine num and prop of census tracts that have 100% coverage, 95%, 90%,
 #    85%, 80%
 #    Note: Include all census tracts that are fully inside the capture area
 #          Should have n = 565
@@ -213,19 +214,19 @@ numCTsWData <- traf %>%
     )) %>% 
   group_by(captured_datetime) %>% 
   summarise(numCTsWData = sum(CCC_present))
-# 1i.iv Merge count variable with datetime tibble
+# 1i.iii Merge count variable with datetime tibble
 #       Max num of CTs w data should be n = 445 
 #       If doing 2020 CTs, note that one CT does not
 #         have any roads - it is North Brother Island 36005001904
 mis <- mis %>% left_join(numCTsWData, by = c('datetime' = 'captured_datetime'))
-# 1i.vi Create variable of percent sampled CTs with CCC data for each datetime
+# 1i.iv Create variable of percent sampled CTs with CCC data for each datetime
 mis <- mis %>% mutate(perCTsWData = numCTsWData/length(ctInSampled_vec)*100)
-# 1i.vii Review mis dataframe
+# 1i.v Review dataframe
 summary(mis)
-# 1i.viii Determine num and proportion datetimes with no CCC data
+# 1i.vi Determine num and proportion datetimes with no CCC data
 nrow(mis[mis$numCTsWData == 0,]) # n = 2,393
 nrow(mis[mis$numCTsWData == 0,])/length(allDates) # proportion = 9.1%
-# 1i.ix Review distribution
+# 1i.vii Review distribution
 mis %>% ggplot() + geom_boxplot(aes(y = perCTsWData))
 
 # 1j Determine if missingness in datetimes is differential before and after
@@ -265,7 +266,7 @@ traf %>% filter(no_image == 'no image') %>%
 ####**********************************************************************
 
 # 2a Restrict to tracts not on edge of capture area
-# 2a.i Restrict 
+# 2a.i Filter traffic data to include only census tracts not on edge of capture area 
 traf <- traf %>% filter((poly_id %in% ctIn_vec) | is.na(poly_id))
 # 2a.ii Confirm n of unique CTs is correct and that datetimes missing images are preserved
 length(ctOrig_vec) - length(ctOut_vec)
@@ -273,7 +274,7 @@ length(unique(traf$poly_id)) # 1 greater than line above because poly_id == NA i
 sum(is.na(traf$poly_id)) # should be n = 2,393
 
 # 2b Restrict to tracts with 95% of pixels sampled 95% of the time
-# 2b.i Restrict
+# 2b.i Restrict num of tracts included
 traf <- traf %>% filter((poly_id %in% ctInSampled_vec) | is.na(poly_id))
 # 2b.ii Confirm n of unique CTs is correct and that datetimes missing images are preserved
 length(ctOrig_vec) - length(coverage$cov9595[coverage$cov9595 == 0]) - length(ctOut_vec)
@@ -294,7 +295,9 @@ traf %>% left_join(tracts_sf, by = c('poly_id' = 'geoid')) %>%
 
 #       n = 10,641,453 observations: 
 #       ((26301 possible datetimes - 2393 missing datetimes) 
-#       * 445 CTs) + 2393 missing datetimes
+#       * 445 CTs) + 2393 missing datetimes # 2393 missing datetimes are added
+#                                             back because they each are 1 row
+#                                             in the dataframe, with no traffic data
 
 ####*******************************************
 #### 3: Create traffic congestion measures #### 
