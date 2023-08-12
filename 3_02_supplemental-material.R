@@ -603,5 +603,19 @@ traf_daily_byCT <- traf_daily %>%
 # 9d Review counts
 table(traf_daily_byCT$dates)
 
+# 9e Evaluate the not sampled pixcounts
+evalaute_notsampled <- fullData %>% 
+  mutate(NS_not_0 = ifelse(gt_pixcount_notsampled > 4, 1, 0)) %>% 
+  group_by(poly_id) %>% 
+  summarise(count_NS_not_0 = sum(NS_not_0), 
+            count_obs = n(),
+            min_NS = min(gt_pixcount_notsampled), 
+            med_NS = median(gt_pixcount_notsampled), 
+            max_NS = max(gt_pixcount_notsampled), 
+            gt_pixcount_tot = mean(gt_pixcount_tot)) %>% 
+  mutate(max_percent_of_total = max_NS/gt_pixcount_tot*100,
+         NS_not_0_percent_of_total = count_NS_not_0/count_obs*100) %>% 
+  dplyr::select(poly_id, count_NS_not_0, count_obs, NS_not_0_percent_of_total, 
+                everything())
 
 
