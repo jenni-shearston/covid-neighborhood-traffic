@@ -283,8 +283,8 @@ fig2_a <-
   scale_fill_viridis(name = 'Index of Concentration\nat the Extremes', 
                      option = 'rocket',
                      discrete = T,
-                     labels = c('Q1 (Greater Disadvantage)', 'Q2', 'Q3', 'Q4',
-                                'Q5 (Lesser Disadvantage)', 'Not Enough Pop.')) +
+                     labels = c('Q1 (More Marginalized)', 'Q2', 'Q3', 'Q4',
+                                'Q5 (Less Marginalized)', 'Not Enough Pop.')) +
   theme_void() +
   theme(panel.grid = element_line(color = "transparent"),
         text = element_text(size = 10))
@@ -301,8 +301,8 @@ fig2_b <-
   scale_fill_viridis(name = 'Environmental\nJustice Index', 
                      option = 'mako',
                      discrete = T,
-                     labels = c('Q1 (Greater Burden)', 'Q2', 'Q3', 'Q4', 
-                                'Q5 (Lesser Burden)', 'Not Enough Data')) +
+                     labels = c('Q1 (More Burdened)', 'Q2', 'Q3', 'Q4', 
+                                'Q5 (Less Burdened)', 'Not Enough Data')) +
   theme_void() +
   theme(panel.grid = element_line(color = "transparent"),
         text = element_text(size = 10))
@@ -336,30 +336,35 @@ f3_traf_strata <-
   dplyr::select(-data) %>% unnest(agg_traf_strata) %>% 
   mutate(facet_label = ifelse(str_detect(strata, 'ejiQ'), 'EJI', 'ICE'),
          facet_label = factor(facet_label, levels = c('ICE', 'EJI'))) %>% 
+  group_by(date, facet_label) %>% 
+  mutate(day_traff = mean(mean_propMaroonRed, na.rm = T)) %>% ungroup() %>% 
   mutate(strata_label = strata,
          strata_label = str_replace(strata_label, 'eji', 'EJI '), 
          strata_label = str_replace(strata_label, 'ice', 'ICE '),
          strata_label = str_replace(strata_label, 'HhincomeBw', ''),
          strata_label = factor(strata_label, 
-                                  levels = c('ICE Q1', 'ICE Q2', 'ICE Q3', 
-                                             'ICE Q4', 'ICE Q5', 'EJI Q5',
-                                             'EJI Q4', 'EJI Q3', 'EJI Q2',
-                                             'EJI Q1'))) 
+                               levels = c('ICE Q5', 'ICE Q4', 'ICE Q3', 
+                                          'ICE Q2', 'ICE Q1', 'EJI Q1',
+                                          'EJI Q2', 'EJI Q3', 'EJI Q4',
+                                          'EJI Q5'))) 
 
 # 4c Create 10-color palette that combines the first five discrete colors from
 #    rocket and the first five discrete colors from cividis, so that ICE and EJI
 #    always uses the same color scheme
 ice_palette <- as.character(rocket(5, alpha = 1, begin = 0, end = 1, direction = 1))
+ice_palette2 <- c("#FAEBDDFF", "#F4875EFF", "#CB1B4FFF", "#611F53FF", "#03051AFF")
 eji_palette <- as.character(mako(5, alpha = 1, begin = 0, end = 1, direction = 1))
+eji_palette2 <- c("#DEF5E5FF", "#49C1ADFF", "#357BA2FF", "#3E356BFF", "#0B0405FF")
 combo_palette <- c(ice_palette, eji_palette)
-
-line_list <- c('dashed', 'solid', 'solid', 'solid', 'solid',
-               'dashed', 'solid', 'solid', 'solid', 'solid')
+combo_palette2 <- c(ice_palette2, eji_palette2) 
+  
+line_list <- c('solid', 'solid', 'solid', 'solid', 'dashed',
+               'solid', 'solid', 'solid', 'solid', 'dashed')
 
 # 4c Create time series plot
 fig3 <- f3_traf_strata %>% 
-  ggplot(aes(x = date, y = mean_propMaroonRed, color = strata_label)) +
-  geom_line(alpha = 0.25) +
+  ggplot(aes(x = date, y = mean_propMaroonRed)) +
+  geom_line(color = 'darkgray', alpha = 0.5) +
   geom_vline(aes(xintercept = ymd("2020-03-22")), color = "black",
              linetype = "dashed") +
   annotate('text', x = ymd('2020-03-10'), y = 30, label = 'Pause\nBegins', 
@@ -368,8 +373,8 @@ fig3 <- f3_traf_strata %>%
              linetype = 'dashed') +
   annotate('text', x = ymd('2020-06-20'), y = 30, label = 'Recovery\nBegins', 
            size = 8/.pt, fontface = 2, hjust = 0, color = 'blue') +
-  geom_smooth(aes(color = strata_label, linetype = strata_label)) +
-  scale_color_manual(values = combo_palette, name = '') + 
+  geom_smooth(aes(color = strata_label, linetype = strata_label), se = FALSE) +
+  scale_color_manual(values = combo_palette2, name = '') + 
   scale_linetype_manual(values = line_list, name = '') +
   facet_wrap(~ facet_label) +
   xlab('Date') + ylab('% Streets w Traffic Congestion') + 

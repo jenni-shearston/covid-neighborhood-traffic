@@ -103,11 +103,11 @@ mod_results3 <- mod_results %>%
   filter(!str_detect(model_identifier, 'Ebm|Svm|Hvm')) %>%  
   filter(!str_detect(model_identifier, 'main')) %>% 
   filter(!str_detect(model_identifier, 'Sens')) %>% 
+  filter(!str_detect(model_identifier, 'sensKnots4.2')) %>% 
   mutate(mod_label = as.character(model_identifier)) %>% 
   separate(col = mod_label, into = c('mod_label', NA, 'knots'), sep = '_') %>% 
   mutate(knots = ifelse(knots == 'includeRecovery', 'sensKnots8.4', knots),
-         facet_type = case_when(str_detect(knots, 'sensKnots4.2') ~ 'Lat 4, Lon 2',
-                                str_detect(knots, 'sensKnots11.5') ~ 'Lat 11, Lon 5',
+         facet_type = case_when(str_detect(knots, 'sensKnots11.5') ~ 'Lat 11, Lon 5',
                                 str_detect(knots, 'sensKnots16.8') ~ 'Lat 16, Lon 8',
                                 str_detect(knots, 'sensKnots8.4') ~ 'Lat 8, Lon 4 (Main)'),
          mod_label = str_replace(mod_label, 'eji', 'EJI'),
@@ -127,8 +127,8 @@ mod_results3 <- mod_results %>%
   arrange(mod_label)
 
 # 2b Add an 'order' variable to use for plotting the y axis. 
-mod_results3$order = c(-0.5,0,0.5,2.5,3,3.5,5.5,6,6.5,8.5,9,9.5,11.5,12,12.5,
-                       14.5,15,15.5,17.5,18,18.5,20.5,21,21.5,23.5,24,24.5,25,26.5,27,27.5)
+mod_results3$order = c(-0.2,0.2,2.8,3.2,5.8,6.2,8.8,9.2,11.8,12.2,
+                       14.8,15.2,17.8,18.2,20.8,21.2,23.5,24,24.5,26.8,27.2)
 
 # 2c Pivot so we can plot both coefficients 
 mod_results3 <- mod_results3 %>%  

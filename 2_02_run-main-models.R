@@ -512,7 +512,7 @@ mod_results <-
     i = 1:length(fullDataS_forKnots$strata),
     .combine = 'rbind'
   ) %dopar% {
-    analyze_trafPause(strata = fullDataS_forKnots$strata[[3]], dataForMod = fullDataS_forKnots$data[[3]], 
+    analyze_trafPause(strata = fullDataS_forKnots$strata[[i]], dataForMod = fullDataS_forKnots$data[[i]], 
                       outcome = 'propMaroonRed', analysis = 'sensKnots4.2', outputPath = model_path)}
 stopCluster(my.cluster)
 tictoc::toc()
@@ -523,6 +523,14 @@ mod_results <- mod_results %>%
   slice(0:1) %>% 
   filter(!is.na(model_identifier)) %>% 
   write_csv(paste0(model_path, 'model_results_table.csv'))
+# 6c.iii Code for for loop, if needed
+tictoc::tic('Run 10 strata in for loop')
+for(i in 1:length(fullDataS_forKnots$strata)){
+  analyze_trafPause(strata = fullDataS_forKnots$strata[[i]], dataForMod = fullDataS_forKnots$data[[i]], 
+                    outcome = 'propMaroonRed', analysis = 'sensKnots4.2', outputPath = model_path)
+  print(fullDataS_forKnots$strata[[i]])
+}
+tictoc::toc()
 
 # 6d Run models with 11 and 5 knots
 # 6d.i Run models
