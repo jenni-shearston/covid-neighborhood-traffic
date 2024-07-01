@@ -51,7 +51,7 @@ figure_path <- paste0(project.folder, 'outputs/figures/')
 polygons_of_interest_path = here::here('data', 'nyc_census_tracts', 'nycgeo_census_tracts.shp')
 
 # 0d Load data
-fullData <- read_rds(paste0(data_path, 'full_dataset_wcovars_daily.rds'))
+fullData <- read_rds(paste0(data_path, 'full_dataset_wcovars_daily_18impute.rds'))
 tracts_sf <- st_read(polygons_of_interest_path)
 mod_results <- read_csv(paste0(model_path, 'model_results_table.csv'))
 load(here::here('data', 'needed_for_gt_to_polygons_function', 'gt_extent.RData'))
@@ -364,7 +364,7 @@ line_list <- c('solid', 'solid', 'solid', 'solid', 'dashed',
 # 4c Create time series plot
 fig3 <- f3_traf_strata %>% 
   ggplot(aes(x = date, y = mean_propMaroonRed)) +
-  geom_line(color = 'darkgray', alpha = 0.5) +
+  geom_line(color = 'lightgray', alpha = 0.5) +
   geom_vline(aes(xintercept = ymd("2020-03-22")), color = "black",
              linetype = "dashed") +
   annotate('text', x = ymd('2020-03-10'), y = 30, label = 'Pause\nBegins', 
@@ -373,7 +373,8 @@ fig3 <- f3_traf_strata %>%
              linetype = 'dashed') +
   annotate('text', x = ymd('2020-06-20'), y = 30, label = 'Recovery\nBegins', 
            size = 8/.pt, fontface = 2, hjust = 0, color = 'blue') +
-  geom_smooth(aes(color = strata_label, linetype = strata_label), se = FALSE) +
+  geom_smooth(aes(color = strata_label, linetype = strata_label), 
+              se = TRUE, fill = 'gray31') +
   scale_color_manual(values = combo_palette2, name = '') + 
   scale_linetype_manual(values = line_list, name = '') +
   facet_wrap(~ facet_label) +
@@ -383,7 +384,7 @@ fig3 <- f3_traf_strata %>%
 fig3
 
 # 4d Save plot
-tiff(paste0(figure_path, 'fig3_TrafficTimeseriesPlot.tiff'),
+tiff(paste0(figure_path, 'fig3_TrafficTimeseriesPlotwci.tiff'),
      units = "cm", width = 18, height = 9, res = 300)
 fig3
 dev.off()

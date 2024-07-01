@@ -273,9 +273,17 @@ eji <- eji %>% dplyr::select(geoid, m_totpop, rpl_eji, rpl_ebm, rpl_svm, rpl_hvm
 eji_nyc <- eji_nyc %>% dplyr::select(geoid, m_totpop, 
                                      rpl_eji, rpl_ebm, rpl_svm, rpl_hvm,
                                      rpl_eji_sens, rpl_ebm_sens)
+eji_nyc_ebm <- eji_nyc %>% 
+  dplyr::select(geoid, rpl_ebm, 
+                e_ozone_epl, e_pm_epl, e_dslpm_epl, e_totcr_epl, # EBM dom 1
+                e_npl_epl, e_tri_epl, e_tsd_epl, e_rmp_epl, e_coal_epl, e_lead_epl, # EBM dom 2
+                e_park_epl, e_houage_epl, e_wlkind_epl, # EBM dom 3
+                e_rail_epl, e_road_epl, e_airprt_epl, # EBM dom 4
+                e_impwtr_epl) # EBM dom 5
 
 # 4b Save out data
 write_fst(eji, path = paste0(processed_data_path, 'eji.fst')) 
 write_fst(eji_nyc, path = paste0(processed_data_path, 'eji_nyc.fst')) 
+write_fst(eji_nyc_ebm, path = paste0(processed_data_path, 'eji_nyc_ebm.fst'))
 
 

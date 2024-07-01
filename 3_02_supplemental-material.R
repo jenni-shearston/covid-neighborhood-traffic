@@ -50,6 +50,7 @@ data_path <- paste0(project.folder, 'data/processed_data/')
 model_path <- paste0(project.folder, 'outputs/models/')
 figure_path <- paste0(project.folder, 'outputs/figures/')
 polygons_of_interest_path = here::here('data', 'nyc_census_tracts', 'nycgeo_census_tracts.shp')
+raw_data_path <- paste0(project.folder, 'data/raw_data/')
 
 # 0d Load data
 fullData <- read_rds(paste0(data_path, 'full_dataset_wcovars_daily.rds'))
@@ -57,6 +58,8 @@ tracts_sf <- st_read(polygons_of_interest_path)
 mod_results <- read_csv(paste0(model_path, 'model_results_table.csv'))
 load(here::here('data', 'needed_for_gt_to_polygons_function', 'gt_extent.RData'))
 inset <- jpeg::readJPEG(paste0(figure_path, 'nyc_inset.jpeg'), native = T)
+no2 <- read_csv(paste0(raw_data_path, 'NYCCAS_NO2_summer-winter-annual.csv'))
+nyc_eji_ebm <- read_fst(paste0(data_path, 'eji_nyc_ebm.fst'))
 
 ####*******************************************
 #### 1: Prepare Map of EJI Module Tertiles #### 
@@ -619,3 +622,231 @@ evalaute_notsampled <- fullData %>%
                 everything())
 
 
+####****************************************************
+#### 10: Table: Change in NO2 by Community District #### 
+####****************************************************
+
+# We will use puma names in the census tract shapefile and community district
+# names in the no2 data to join all data together. Puma names contain
+# community district names, although Bronx 1 & 2, Bronx 3 & 6, 
+# Manhattan 1 & 2, and Manhattan 4 & 5 are merged. This will be more accurate
+# than overlaying a shapefile, because in 2010, census tracts did not nest
+# within community districts and there would have been some overlap
+
+# 10a Tidy no2 data variable names
+no2 <- no2 %>% janitor::clean_names()
+
+# 10b Keep only needed time periods, geography, and vars in NO2 dataset
+#     Need CD geography, summer 2019 and summer 2020 time periods, and mean 
+#       no2 concentration (ppb)
+no2 <- no2 %>% filter(geo_type == 'CD') %>% 
+  filter(time_period == 'Summer 2019' | time_period == 'Summer 2020') %>% 
+  dplyr::select(-geo_rank, -x10th_percentile_ppb, -x90th_percentile_ppb,
+                -geo_type) 
+
+# 10c Calculate 2019-2020 summer change in NO2 by community 
+#     district & keep only needed variables
+no2 <- no2 %>% pivot_wider(names_from = time_period, values_from = mean_ppb) %>% 
+  janitor::clean_names() 
+no2 <- no2 %>% mutate(no2_change = summer_2020 - summer_2019) %>% 
+  dplyr::select(-summer_2020, -summer_2019)
+
+# 10d Alter geo_id to create new ids for the community districts that are
+#     joint (Bronx 1 & 2, Bronx 3 & 6, Manhattan 1 & 2, and Manhattan 4 & 5)
+no2 <- no2 %>% mutate(geo_id = case_when(
+  geo_id == 201 | geo_id == 202 ~ '201_202',
+  geo_id == 101 | geo_id == 102 ~ '101_102',
+  geo_id == 203 | geo_id == 206 ~ '203_206',
+  geo_id == 104 | geo_id == 105 ~ '104_105',
+  TRUE ~ as.character(geo_id)
+))
+
+# 10e Average NO2 concentrations and merge community district names for 
+#     combined community districts 
+#     (Bronx 1 & 2, Bronx 3 & 6, Manhattan 1 & 2, and Manhattan 4 & 5)
+no2 <- no2 %>% mutate(no2_change = case_when(
+  geo_id == '201_202' ~ mean(c(-1.5, -1)),
+  geo_id == '101_102' ~ mean(c(-6.6, -6.3)),
+  geo_id == '203_206' ~ mean(c(-0.4, 0.3)),
+  geo_id == '104_105' ~ mean(c(-5.7, -5.2)),
+  TRUE ~ no2_change
+))
+no2 <- no2 %>% mutate(geography = case_when(
+  geography == 'Financial District (CD1)' ~ 'Financial District (CD1) & Greenwich Village and Soho (CD2)',
+  geography == 'Clinton and Chelsea (CD4)' ~ 'Clinton and Chelsea (CD4) & Midtown (CD5)',
+  geography == 'Mott Haven and Melrose (CD1)' ~ 'Mott Haven and Melrose (CD1) & Hunts Point and Longwood (CD2)',
+  geography == 'Morrisania and Crotona (CD3)' ~ 'Morrisania and Crotona (CD3) & Belmont and East Tremont (CD6)',
+  TRUE ~ geography
+)) %>% 
+  filter(!geography == 'Greenwich Village and Soho (CD2)') %>% 
+  filter(!geography == 'Midtown (CD5)') %>% 
+  filter(!geography == 'Hunts Point and Longwood (CD2)') %>% 
+  filter(!geography == 'Belmont and East Tremont (CD6)')
+
+# 10f Pull polygon ids, and ICE / EJI quintiles from full dataset
+ct_ice_eji <- fullData %>% dplyr::select(poly_id,ice_hhincome_bw_5, eji_5) %>% 
+  distinct()
+
+# 10g Identify community districts with 100% of census tracts in study area 
+n_cts_cds <- as.data.frame(tracts_sf) %>% group_by(puma_nm) %>% 
+  summarise(n_cts_full = n())
+
+# 10g Merge ICE / EJI quintile data with census tract shapefile and count of
+#     census tracts in each community district
+tracts_sf_ice_eji <- ct_ice_eji %>% 
+  left_join(tracts_sf, by = c('poly_id' = 'geoid')) %>% 
+  left_join(n_cts_cds, by = 'puma_nm')
+
+# 10i Convert to dataframe and make new community district id variable that
+#     matches geo_id from no2 data
+tracts_ice_eji <- as.data.frame(tracts_sf_ice_eji) %>% 
+  mutate(geo_id2 = gsub("\\D", "", puma_nm),
+         geo_id3 = str_pad(geo_id2, width = 2, side = c('left'), pad = '0'),
+         geo_id4 = case_when(
+           brgh_nm == 'Bronx' ~ paste0('2', geo_id3),
+           brgh_nm == 'Brooklyn' ~ paste0('3', geo_id3),
+           brgh_nm == 'Manhattan' ~ paste0('1', geo_id3),
+           brgh_nm == 'Queens' ~ paste0('4', geo_id3)
+         ))
+tracts_ice_eji <- tracts_ice_eji %>% 
+  mutate(geo_id = case_when(
+    brgh_nm == 'Bronx' & str_detect(puma_nm, '1 & 2') ~ '201_202',
+    brgh_nm == 'Bronx' & str_detect(puma_nm, '3 & 6') ~ '203_206',
+    brgh_nm == 'Manhattan' & str_detect(puma_nm, '1 & 2') ~ '101_102',
+    brgh_nm == 'Manhattan' & str_detect(puma_nm, '4 & 5') ~ '104_105',
+    TRUE ~ geo_id4
+  ))
+
+# 10j Merge no2 and EJI / ICE data and keep only needed vars
+cd_no2_seg <- tracts_ice_eji %>% 
+  left_join(no2, by = 'geo_id') %>% 
+  dplyr::select(geo_id, geography, no2_change, ice_hhincome_bw_5, eji_5,
+                n_cts_full)
+
+# 10k Aggregate EJI and ICE to community district level using mode
+# 10k.i Create mode function b/c base R does not have one
+Mode <- function(x, na.rm = FALSE) {
+  if(na.rm){
+    x = x[!is.na(x)]
+  }
+  
+  ux <- unique(x)
+  return(ux[which.max(tabulate(match(x, ux)))])
+}
+# 10k.ii
+cd_no2_seg <- cd_no2_seg %>% 
+  group_by(geo_id, geography, no2_change, n_cts_full) %>% 
+  summarise(ice_hhincome_bw_5_mode = Mode(ice_hhincome_bw_5, na.rm = TRUE),
+            eji_5_mode = Mode(eji_5, na.rm = TRUE),
+            n_cts = n()) %>% ungroup()
+
+# 10l Flag community districts with less than 50% of census tracts
+cd_no2_seg <- cd_no2_seg %>% 
+  mutate(include = ifelse((n_cts/n_cts_full)*100 > 50, 1, 0))
+
+# 10m Format as table and write to clipboard
+suptab_no2 <- cd_no2_seg %>% 
+  ungroup() %>% 
+  filter(include == 1) %>% 
+  mutate(borrough = case_when(
+    geo_id == '204' | geo_id == '205' ~ 'Bronx',
+    geo_id == '302' ~ 'Brooklyn',
+    geo_id == '201_202' ~ 'Bronx',
+    TRUE ~ 'Manhattan')) %>% 
+  mutate(eji_5_modeFlipped = case_when(
+    eji_5_mode == 'Q1' ~ 'Q5',
+    eji_5_mode == 'Q2' ~ 'Q4',
+    eji_5_mode == 'Q3' ~ 'Q3',
+    eji_5_mode == 'Q4' ~ 'Q2',
+    eji_5_mode == 'Q5' ~ 'Q1',
+    TRUE ~ NA)) %>% 
+  dplyr::select(borrough, geography, ice_hhincome_bw_5_mode, 
+                eji_5_modeFlipped, no2_change) %>% 
+  arrange(no2_change)
+clipr::write_clip(suptab_no2)
+
+
+####***********************************************
+#### 11: Table: EBM Module domains and metrics #### 
+####***********************************************
+
+# 11a Restrict to census tracts in study area
+#     Should end with 436 census tracts (9 are missing EJI data)
+cts <- fullData$poly_id %>% unique()
+nyc_eji_ebm_study_area <- nyc_eji_ebm %>% 
+  filter(geoid %in% cts) %>% 
+  na.omit()
+
+# 11b Calculate quantiles
+quants_eji_ebm = quantile(nyc_eji_ebm_study_area$rpl_ebm, na.rm = T, probs = c(0, .33, .66, 1))
+
+# 11c Assign new stratified variables
+#     Tertiles are flipped!! T3 = least burden, T1 = most burden
+nyc_eji_ebm_study_area <- nyc_eji_ebm_study_area %>% 
+  mutate(
+    eji_ebm_3 = factor(case_when(
+      rpl_ebm < quants_eji_ebm[2] ~ 'T3',
+      rpl_ebm >= quants_eji_ebm[2] & rpl_ebm < quants_eji_ebm[3] ~ 'T2',
+      rpl_ebm >= quants_eji_ebm[3] ~ 'T1')))
+
+# 11d Run tables to confirm missing obs counts match those above
+table(nyc_eji_ebm_study_area$eji_ebm_3, useNA = 'always')
+
+# 11e Pivot longer
+ebm_long <- nyc_eji_ebm_study_area %>% 
+  pivot_longer(e_ozone_epl:e_impwtr_epl, names_to = 'domain', values_to = 'epl') 
+
+# 11f Calculate mean and sd of each epl grouped by tertile and domain
+ebm_long <- ebm_long %>% 
+  group_by(eji_ebm_3, domain) %>% 
+  mutate(mean_epl = round(mean(epl), digits = 2),
+         sd_epl = round(sd(epl), digits = 2)) %>% 
+  ungroup()
+
+# 11g Pivot wider so that each tertile is a column
+ebm_wide <- ebm_long %>% 
+  mutate(mean_sd_epl = paste0(mean_epl, ' (', sd_epl, ')')) %>% 
+  dplyr::select(eji_ebm_3, domain, mean_sd_epl) %>% 
+  distinct() %>% 
+  pivot_wider(names_from = 'eji_ebm_3', values_from = 'mean_sd_epl') %>% 
+  dplyr::select(domain, T1, T2, T3)
+
+# 11h Tidy domain names
+ebm_wide <- ebm_wide %>% 
+  mutate(domain = str_replace(domain, 'e_', ''),
+         domain = str_replace(domain, '_epl', '')) %>% 
+  mutate(domain = case_when(
+    domain == 'ozone' ~ 'Annual Mean Days Above Ozone Regulatory Standard',
+    domain == 'pm' ~ 'Annual Mean Days Above PM2.5 Regulatory Standard',
+    domain == 'dslpm' ~ 'Ambient Diesel PM Concentration',
+    domain == 'totcr' ~ 'Probability of Cancer in Lifetime',
+    domain == 'npl' ~ 'Proportion of Area within 1-mile of EPA National Priority List Site',
+    domain == 'tri' ~ 'Proportion of Area within 1-mile of EPA Toxic Release Inventory Site',
+    domain == 'tsd' ~ 'Proportion of Area within 1-mile of EPA Treatment, Storage, & Disposal Site',
+    domain == 'rmp' ~ 'Proportion of Area within 1-mile of EPA Risk Management Plan Site',
+    domain == 'coal' ~ 'Proportion of Area within 1-mile of Coal Mine',
+    domain == 'lead' ~ 'Proportion of Area within 1-mile of Lead Mine',
+    domain == 'park' ~ 'Proportion of Area within 1-mile of Green Space',
+    domain == 'houage' ~ 'Percentage of Houses Built pre-1980',
+    domain == 'wlkind' ~ 'Relative Walkability Rank',
+    domain == 'rail' ~ 'Proportion of Area within 1-mile of Railroad',
+    domain == 'road' ~ 'Proportion of Area within 1-mile of High-Volume Road/Highway',
+    domain == 'airprt' ~ 'Proportion of Area within 1-mile of Airport',
+    domain == 'impwtr' ~ 'Impaired Water Bodies',
+    TRUE ~ domain
+  ))
+
+# 11i Add domain groupings
+suptab_ebm <- ebm_wide %>% 
+  mutate(group = c('Air Pollution', 'Air Pollution', 'Air Pollution',
+                   'Air Pollution', 'Potentially Hazardous & Toxic Sites', 
+                   'Potentially Hazardous & Toxic Sites', 
+                   'Potentially Hazardous & Toxic Sites', 
+                   'Potentially Hazardous & Toxic Sites', 
+                   'Potentially Hazardous & Toxic Sites', 
+                   'Potentially Hazardous & Toxic Sites', 'Built Environment', 
+                   'Built Environment', 'Built Environment', 
+                   'Transportation Infrastructure', 'Transportation Infrastructure', 
+                   'Transportation Infrastructure', 'Water Pollution')) %>% 
+  dplyr::select(group, everything())
+clipr::write_clip(suptab_ebm)

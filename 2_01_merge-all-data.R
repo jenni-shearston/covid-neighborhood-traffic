@@ -51,7 +51,7 @@ eji <- read_fst(paste0(data_path, 'eji_nyc.fst'))
 ice <- read_fst(paste0(data_path, 'ice_census_vars_2010CTs.fst'))
 # 0d.iv Load census tract shapefile for mapping
 tracts_sf <- st_read(polygons_of_interest_path) %>%  
-  dplyr::select(geoid, geometry)
+  dplyr::select(geoid, nta_id, puma_id, geometry)
 
 ####*************************************
 #### 1: Merge and Assess Missingness #### 
@@ -400,8 +400,127 @@ traf_eji_ice_daily <- traf_eji_ice_daily %>%
 traf_eji_ice_daily_rh <- traf_eji_ice_daily_rh %>% 
   left_join(time_elapsed_df, by = 'date')
 
+####*********************************************************************
+#### 6: Identify and Impute Missing ct/datetimes from 6/21-8/31 2018 #### 
+####*********************************************************************
+
+# 6a Identify census tracts /datetimes partially missing data 
+#      Note: When reviewing time series of the daily data, it became clear
+#            that from 6/21 - 8/31/2018, all EJI/ICE strata and traffic
+#            metrics were lower than expected. Upon visual inspection of some
+#            of the pre-processed traffic images, we saw that ~half the image
+#            was blocked. This resulted in these census tracts being assigned
+#            a value of 0 for all traffic colors during this time period. 
+#            Here we identify these tract /datetimes and other missing
+#            tract / datetimes
+traf_eji_ice_daily3 <- traf_eji_ice_daily %>% 
+  mutate(impute_flag = ifelse(date > date('2018-06-21') & 
+                                date < date('2018-08-31'),
+                              'impute',
+                              'good'))
+traf_eji_ice_daily_rh3 <- traf_eji_ice_daily_rh %>% 
+  mutate(impute_flag = ifelse(date > date('2018-06-21') & 
+                                date < date('2018-08-31'),
+                              'impute',
+                              'good'))
+
+# 6b Run regression of congestion using season, year, day of week, time elapsed,
+#    and neighborhood tabulation area as predictors
+# 6b.i Main analysis
+impute_data <- traf_eji_ice_daily3 %>% filter(!year == 2020) %>% 
+  filter(impute_flag == 'good') %>% 
+  mutate(season = case_when(
+    month == '1' | month == '2' | month == '12' ~ 'Winter',
+    month == '3' | month == '4' | month == '5' ~ 'Spring',
+    month == '6' | month == '7' | month == '8' ~ 'Summer',
+    month == '9' | month == '10' | month == '11' ~ 'Fall'))
+impute_mod <- lm(prop_maroon_red ~ as.factor(year) + as.factor(season) + 
+                   as.factor(dow) + time_elapsed + as.factor(nta_id), 
+                 data = impute_data)
+# 6b.ii Rush hour analysis
+impute_data_rh <- traf_eji_ice_daily_rh3 %>% filter(!year == 2020) %>% 
+  filter(impute_flag == 'good') %>% 
+  mutate(season = case_when(
+    month == '1' | month == '2' | month == '12' ~ 'Winter',
+    month == '3' | month == '4' | month == '5' ~ 'Spring',
+    month == '6' | month == '7' | month == '8' ~ 'Summer',
+    month == '9' | month == '10' | month == '11' ~ 'Fall'))
+impute_mod_rh <- lm(prop_maroon_red ~ as.factor(year) + as.factor(season) +
+                      as.factor(dow) + time_elapsed + as.factor(nta_id) + 
+                      as.factor(rush_hour), 
+                    data = impute_data_rh)
+
+# 6c Predict all census tract /datetimes from 2018-2019
+#*****************************************************************Main 
+# 6c.i Create prediction dataframe
+prediction_data <- traf_eji_ice_daily3 %>% ungroup() %>% 
+  dplyr::select(nta_id, date, time_elapsed, year, month, dow) %>% 
+  distinct() %>% 
+  mutate(season = case_when(
+    month == '1' | month == '2' | month == '12' ~ 'Winter',
+    month == '3' | month == '4' | month == '5' ~ 'Spring',
+    month == '6' | month == '7' | month == '8' ~ 'Summer',
+    month == '9' | month == '10' | month == '11' ~ 'Fall')) %>% 
+  filter(!year == 2020)
+# 6c.ii Predict on new dataframe
+prediction_data <- prediction_data %>% 
+  mutate(prop_maroon_red_imp_values = 
+           predict(impute_mod, newdata = prediction_data),
+         prop_maroon_red_imp_values = ifelse(prop_maroon_red_imp_values < 0, 
+                                             0, prop_maroon_red_imp_values))
+# 6c.iii Keep only impute values and merge variables
+prediction_data <- prediction_data %>% 
+  dplyr::select(nta_id, date, prop_maroon_red_imp_values)
+#*****************************************************************Rush Hour
+# 6c.i Create prediction dataframe
+prediction_data_rh <- traf_eji_ice_daily_rh3 %>% ungroup() %>% 
+  dplyr::select(nta_id, date, rush_hour, time_elapsed, year, month, dow) %>% 
+  distinct() %>% 
+  mutate(season = case_when(
+    month == '1' | month == '2' | month == '12' ~ 'Winter',
+    month == '3' | month == '4' | month == '5' ~ 'Spring',
+    month == '6' | month == '7' | month == '8' ~ 'Summer',
+    month == '9' | month == '10' | month == '11' ~ 'Fall')) %>% 
+  filter(!year == 2020)
+# 6c.ii Predict on new dataframe
+prediction_data_rh <- prediction_data_rh %>% 
+  mutate(prop_maroon_red_imp_values = 
+           predict(impute_mod_rh, newdata = prediction_data_rh),
+         prop_maroon_red_imp_values = ifelse(prop_maroon_red_imp_values < 0, 
+                                             0, prop_maroon_red_imp_values))
+# 6c.iii Keep only impute values and merge variables
+prediction_data_rh <- prediction_data_rh %>% 
+  dplyr::select(nta_id, date, rush_hour, prop_maroon_red_imp_values)
+
+# 6d Impute flagged observations with predictions
+traf_eji_ice_daily4 <- traf_eji_ice_daily3 %>% 
+  left_join(prediction_data, by = c('date', 'nta_id')) %>% 
+  rowwise() %>% 
+  mutate(prop_maroon_red = ifelse(impute_flag == 'impute', 
+                                  prop_maroon_red_imp_values,
+                                  prop_maroon_red)) %>% ungroup()
+traf_eji_ice_daily_rh4 <- traf_eji_ice_daily_rh3 %>% 
+  left_join(prediction_data_rh, by = c('date', 'nta_id', 'rush_hour')) %>% 
+  rowwise() %>% 
+  mutate(prop_maroon_red = ifelse(impute_flag == 'impute', 
+                                  prop_maroon_red_imp_values,
+                                  prop_maroon_red)) %>% ungroup()
+
+# 6e Visually double check imputation using subset
+check_impute <- as.data.frame(traf_eji_ice_daily4) %>% 
+  filter(poly_id == '36061000900' | poly_id == '36061004100' | 
+           poly_id == '36005001900') %>% 
+  dplyr::select(poly_id, date, prop_maroon_red, prop_maroon_red_imp_values,
+                impute_flag, gt_pixcount_maroon:gt_pixcount_gray)
+check_impute_rh <- as.data.frame(traf_eji_ice_daily_rh4) %>% 
+  filter(poly_id == '36061000900' | poly_id == '36061004100' | 
+           poly_id == '36005001900') %>% 
+  dplyr::select(poly_id, date, rush_hour, prop_maroon_red, 
+                prop_maroon_red_imp_values,
+                impute_flag, gt_pixcount_maroon:gt_pixcount_gray)
+
 ####****************************************************************
-#### 6: Add CT Centroids to Account for Spatial Autocorrelation #### 
+#### 7: Add CT Centroids to Account for Spatial Autocorrelation #### 
 ####****************************************************************
 
 # 6a Get census tracts centroids
@@ -415,14 +534,14 @@ colnames(cents)[2:3] <- c('lon', 'lat')
 cents %>% ggplot(aes(x = lon, y = lat)) + geom_point()
 
 # 6b Add to traffic + covariate dataset
-traf_eji_ice_daily <- traf_eji_ice_daily %>% dplyr::select(-geometry) %>% 
+traf_eji_ice_daily4 <- traf_eji_ice_daily4 %>% dplyr::select(-geometry) %>% 
   left_join(cents, by = 'poly_id')
-traf_eji_ice_daily_rh <- traf_eji_ice_daily_rh %>% dplyr::select(-geometry) %>% 
+traf_eji_ice_daily_rh4 <- traf_eji_ice_daily_rh4 %>% dplyr::select(-geometry) %>% 
   left_join(cents, by = 'poly_id')
 
 # 6c Save dataset
-traf_eji_ice_daily %>% write_rds(file = paste0(data_path, 'full_dataset_wcovars_daily.rds'))
-traf_eji_ice_daily_rh %>% write_rds(file = paste0(data_path, 'full_dataset_wcovars+rushhour_daily.rds')) 
+traf_eji_ice_daily4 %>% write_rds(file = paste0(data_path, 'full_dataset_wcovars_daily_18impute.rds'))
+traf_eji_ice_daily_rh4 %>% write_rds(file = paste0(data_path, 'full_dataset_wcovars+rushhour_daily_18impute.rds')) 
 
 ####***********************************
 #### 7: Review Traffic Time Series #### 
@@ -431,27 +550,27 @@ traf_eji_ice_daily_rh %>% write_rds(file = paste0(data_path, 'full_dataset_wcova
 # 7a Review time series of traffic data
 #    Note: From June 22 through Sept 1 2018 percent green is weirdly low
 # 7a.i Proportion green variable
-traf_eji_ice_daily %>% group_by(date) %>% 
+traf_eji_ice_daily4 %>% group_by(date) %>% 
   summarise(mean_prop_green = mean(prop_green, na.rm = T)) %>% 
   ggplot(aes(x = date, y = mean_prop_green)) +
   geom_line() 
 # 7a.ii Same is true for green pixel counts
-traf_eji_ice_daily %>% group_by(date) %>% 
+traf_eji_ice_daily4 %>% group_by(date) %>% 
   summarise(mean_gt_pixcount_green = mean(gt_pixcount_green, na.rm = T)) %>% 
   ggplot(aes(x = date, y = mean_gt_pixcount_green)) +
   geom_line() 
 # 7a.iii Percent maroon+red also dips but less so, and pandemic effect more apparent
-traf_eji_ice_daily %>% group_by(date) %>% 
+traf_eji_ice_daily4 %>% group_by(date) %>% 
   summarise(mean_prop_maroon_red = mean(prop_maroon_red, na.rm = T)) %>% 
   ggplot(aes(x = date, y = mean_prop_maroon_red)) +
   geom_line() 
 # 7a.iv Also seen in speed reduction factor, also more apparent pandemic effect
-traf_eji_ice_daily %>% group_by(date) %>% 
+traf_eji_ice_daily4 %>% group_by(date) %>% 
   summarise(mean_speed_reduct_fact = mean(speed_reduct_fact, na.rm = T)) %>% 
   ggplot(aes(x = date, y = mean_speed_reduct_fact)) +
   geom_line() 
 # 7a.v Decrease also seen for orange pixcount
-traf_eji_ice_daily %>% group_by(date) %>% 
+traf_eji_ice_daily4 %>% group_by(date) %>% 
   summarise(mean_gt_pixcount_orange = mean(gt_pixcount_orange, na.rm = T)) %>% 
   ggplot(aes(x = date, y = mean_gt_pixcount_orange)) +
   geom_line() 
@@ -461,7 +580,7 @@ traf %>% group_by(captured_datetime) %>%
   ggplot(aes(x = captured_datetime, y = mean_gt_pixcount_orange)) +
   geom_line() 
 # 7a.vii Percent maroon+red faceted by rush hour
-traf_eji_ice_daily_rh %>% group_by(date, rush_hour) %>% 
+traf_eji_ice_daily_rh4 %>% group_by(date, rush_hour) %>% 
   summarise(mean_prop_maroon_red = mean(prop_maroon_red, na.rm = T)) %>% 
   mutate(rush_hour = factor(rush_hour)) %>% 
   ggplot(aes(x = date, y = mean_prop_maroon_red, color = rush_hour)) +

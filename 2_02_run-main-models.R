@@ -21,9 +21,6 @@
 #### N: Notes ####
 ####**************
 
-# STILL TO FOLLOW UP ON AS OF JUNE 16:
-# Follow up with Markus about weird traffic decrease in June-August 2018
-
 # Na Description
 # In this script we specify and run all models, including the main analysis,
 # secondary analyses, and sensitivity analyses. We also conduct some model
@@ -51,9 +48,8 @@ data_path <- paste0(project.folder, 'data/processed_data/')
 model_path <- paste0(project.folder, 'outputs/models/')
 
 # 0d Load data
-fullData <- read_rds(paste0(data_path, 'full_dataset_wcovars_daily.rds'))
-fullData_rh <- read_rds(paste0(data_path, 'full_dataset_wcovars+rushhour_daily.rds'))
-
+fullData <- read_rds(paste0(data_path, 'full_dataset_wcovars_daily_18impute.rds'))
+fullData_rh <- read_rds(paste0(data_path, 'full_dataset_wcovars+rushhour_daily_18impute.rds'))
 
 ####*************************************
 #### 1: Split, Filter & Nest Dataset #### 
@@ -306,7 +302,7 @@ tictoc::toc()
 #        When running in parallel the 'slice' step in 2h where old models are 
 #        removed from the modTable does not work correctly
 #        b/c each core does the step independently (although the table is saved)
-mod_results <- mod_results %>% 
+mod_results2 <- mod_results %>% 
   group_by(model_identifier) %>% 
   arrange(desc(run_date)) %>% 
   slice(0:1) %>% 
@@ -588,7 +584,7 @@ tictoc::toc()
 
 # 7d Run HVM module adjusted for SVM and EBM
 tictoc::tic('Run 3 strata in for loop')
-for(i in 2:length(fullDataS_forHVMSens$strata)){
+for(i in 1:length(fullDataS_forHVMSens$strata)){
   fullDataS_forHVMSens$data[[i]] <- fullDataS_forHVMSens$data[[i]] %>% na.omit()
   analyze_trafPause(strata = fullDataS_forHVMSens$strata[[i]], dataForMod = fullDataS_forHVMSens$data[[i]], 
                     outcome = 'propMaroonRed', analysis = 'ejiModsAdjustedHVM', outputPath = model_path)
